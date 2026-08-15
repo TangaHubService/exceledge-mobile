@@ -1,0 +1,74 @@
+{
+  "auth": {
+    "welcomeBack": "Karibu tena",
+    "signInToContinue": "Ingia ili kuendelea",
+    "email": "Barua pepe",
+    "emailPlaceholder": "wewe@kampuni.com",
+    "password": "Nenosiri",
+    "login": "Ingia",
+    "forgotPassword": "Umesahau nenosiri?",
+    "show": "Onyesha",
+    "hide": "Ficha",
+    "loginError": "Imeshindwa kuingia. Angalia muunganisho wako na ujaribu tena."
+  },
+  "home": {
+    "todaysSales": "Mauzo ya Leo",
+    "sinceShiftOpened": "Tangu zamu ifunguliwe",
+    "openShiftPrompt": "Fungua zamu ili kuanza kuuza",
+    "newSale": "Uuzaji Mpya",
+    "salesHistory": "Historia ya Mauzo",
+    "heldSales": "Mauzo Yaliyositishwa",
+    "returns": "Marejesho",
+    "shift": "Zamu",
+    "more": "Zaidi",
+    "shiftOpen": "Zamu Iko Wazi",
+    "shiftClosed": "Zamu Imefungwa",
+    "online": "Mtandaoni",
+    "offline": "Nje ya Mtandao",
+    "ebmOff": "EBM Imezimwa",
+    "noShiftOpen": "Hakuna zamu iliyo wazi",
+    "shiftOpenStatus": "Zamu iko wazi"
+  },
+  "cart": {
+    "title": "Kikapu",
+    "items": "bidhaa",
+    "empty": "Kikapu chako ni tupu",
+    "emptyDesc": "Ongeza bidhaa kutoka skrini ya POS kuanza uuzaji.",
+    "browseProducts": "Vinjari bidhaa",
+    "clear": "Futa",
+    "holdSale": "Sitisha uuzaji kwa baadaye",
+    "holding": "Inasitishwa…",
+    "customer": "Mteja",
+    "walkIn": "Mteja wa kawaida",
+    "total": "Jumla",
+    "continue": "Endelea"
+  },
+  "checkout": {
+    "title": "Malipo",
+    "paymentMethod": "Njia ya malipo",
+    "cash": "Fedha taslimu",
+    "momo": "Pesa za Simu",
+    "card": "Kadi",
+    "credit": "Deni",
+    "mixed": "Mchanganyiko",
+    "cashTendered": "Fedha zilizotolewa",
+    "changeDue": "Chenji",
+    "cashAmount": "Kiasi cha fedha taslimu",
+    "balanceOnCredit": "Salio la deni",
+    "fullAmountCredit": "Kiasi chote kitarekodiwa kwenye akaunti ya {{name}} kama deni.",
+    "itemsLabel": "Bidhaa",
+    "charge": "Tosa",
+    "processing": "Inachakatwa…",
+    "selectCustomerFirst": "Chagua mteja kwanza.",
+    "offlineWarning": "Uko nje ya mtandao — malipo hayapatikani"
+  },
+  "common": {
+    "language": "Lugha"
+  },
+  "languages": {
+    "en": "Kiingereza",
+    "rw": "Kinyarwanda",
+    "fr": "Kifaransa",
+    "sw": "Kiswahili"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "auth": {
+    "welcomeBack": "Bon retour",
+    "signInToContinue": "Connectez-vous pour continuer",
+    "email": "E-mail",
+    "emailPlaceholder": "vous@entreprise.com",
+    "password": "Mot de passe",
+    "login": "Connexion",
+    "forgotPassword": "Mot de passe oublié ?",
+    "show": "Afficher",
+    "hide": "Masquer",
+    "loginError": "Connexion impossible. Vérifiez votre connexion et réessayez."
+  },
+  "home": {
+    "todaysSales": "Ventes du jour",
+    "sinceShiftOpened": "Depuis l'ouverture du poste",
+    "openShiftPrompt": "Ouvrez un poste pour commencer à vendre",
+    "newSale": "Nouvelle vente",
+    "salesHistory": "Historique des ventes",
+    "heldSales": "Ventes en attente",
+    "returns": "Retours",
+    "shift": "Poste",
+    "more": "Plus",
+    "shiftOpen": "Poste ouvert",
+    "shiftClosed": "Poste fermé",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "ebmOff": "EBM désactivé",
+    "noShiftOpen": "Aucun poste ouvert",
+    "shiftOpenStatus": "Poste ouvert"
+  },
+  "cart": {
+    "title": "Panier",
+    "items": "articles",
+    "empty": "Votre panier est vide",
+    "emptyDesc": "Ajoutez des produits depuis l'écran POS pour commencer une vente.",
+    "browseProducts": "Parcourir les produits",
+    "clear": "Vider",
+    "holdSale": "Mettre la vente en attente",
+    "holding": "Mise en attente…",
+    "customer": "Client",
+    "walkIn": "Client de passage",
+    "total": "Total",
+    "continue": "Continuer"
+  },
+  "checkout": {
+    "title": "Paiement",
+    "paymentMethod": "Mode de paiement",
+    "cash": "Espèces",
+    "momo": "Mobile Money",
+    "card": "Carte",
+    "credit": "Crédit",
+    "mixed": "Mixte",
+    "cashTendered": "Espèces reçues",
+    "changeDue": "Monnaie à rendre",
+    "cashAmount": "Montant en espèces",
+    "balanceOnCredit": "Solde à crédit",
+    "fullAmountCredit": "Le montant total sera enregistré comme crédit sur le compte de {{name}}.",
+    "itemsLabel": "Articles",
+    "charge": "Encaisser",
+    "processing": "Traitement…",
+    "selectCustomerFirst": "Sélectionnez d'abord un client.",
+    "offlineWarning": "Vous êtes hors ligne — le paiement est indisponible"
+  },
+  "common": {
+    "language": "Langue"
+  },
+  "languages": {
+    "en": "Anglais",
+    "rw": "Kinyarwanda",
+    "fr": "Français",
+    "sw": "Swahili"
+  }
+}

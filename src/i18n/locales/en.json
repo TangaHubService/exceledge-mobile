@@ -1,0 +1,74 @@
+{
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "signInToContinue": "Sign in to continue",
+    "email": "Email",
+    "emailPlaceholder": "you@company.com",
+    "password": "Password",
+    "login": "Login",
+    "forgotPassword": "Forgot Password?",
+    "show": "Show",
+    "hide": "Hide",
+    "loginError": "Unable to sign in. Check your connection and try again."
+  },
+  "home": {
+    "todaysSales": "Today's Sales",
+    "sinceShiftOpened": "Since shift opened",
+    "openShiftPrompt": "Open a shift to start selling",
+    "newSale": "New Sale",
+    "salesHistory": "Sales History",
+    "heldSales": "Held Sales",
+    "returns": "Returns",
+    "shift": "Shift",
+    "more": "More",
+    "shiftOpen": "Shift Open",
+    "shiftClosed": "Shift Closed",
+    "online": "Online",
+    "offline": "Offline",
+    "ebmOff": "EBM off",
+    "noShiftOpen": "No shift open",
+    "shiftOpenStatus": "Shift open"
+  },
+  "cart": {
+    "title": "Cart",
+    "items": "items",
+    "empty": "Your cart is empty",
+    "emptyDesc": "Add products from the POS screen to start a sale.",
+    "browseProducts": "Browse products",
+    "clear": "Clear",
+    "holdSale": "Hold sale for later",
+    "holding": "Holding…",
+    "customer": "Customer",
+    "walkIn": "Walk-in customer",
+    "total": "Total",
+    "continue": "Continue"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "paymentMethod": "Payment method",
+    "cash": "Cash",
+    "momo": "MoMo",
+    "card": "Card",
+    "credit": "Credit",
+    "mixed": "Mixed",
+    "cashTendered": "Cash tendered",
+    "changeDue": "Change due",
+    "cashAmount": "Cash amount",
+    "balanceOnCredit": "Balance on credit",
+    "fullAmountCredit": "The full amount will be recorded against {{name}}'s account as credit.",
+    "itemsLabel": "Items",
+    "charge": "Charge",
+    "processing": "Processing…",
+    "selectCustomerFirst": "Select a customer first.",
+    "offlineWarning": "You're offline — checkout is unavailable"
+  },
+  "common": {
+    "language": "Language"
+  },
+  "languages": {
+    "en": "English",
+    "rw": "Kinyarwanda",
+    "fr": "French",
+    "sw": "Swahili"
+  }
+}

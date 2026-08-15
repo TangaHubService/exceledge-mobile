@@ -1,0 +1,74 @@
+{
+  "auth": {
+    "welcomeBack": "Murakaza neza",
+    "signInToContinue": "Injira kugira ngo ukomeze",
+    "email": "Imeyili",
+    "emailPlaceholder": "wowe@isosiyete.com",
+    "password": "Ijambo ry'ibanga",
+    "login": "Injira",
+    "forgotPassword": "Wibagiwe ijambo ry'ibanga?",
+    "show": "Erekana",
+    "hide": "Hisha",
+    "loginError": "Ntibishoboka kwinjira. Genzura interineti wongere ugerageze."
+  },
+  "home": {
+    "todaysSales": "Ibyacurujwe uyu munsi",
+    "sinceShiftOpened": "Kuva shift ifunguwe",
+    "openShiftPrompt": "Fungura shift kugira ngo utangire kugurisha",
+    "newSale": "Igurisha rishya",
+    "salesHistory": "Amateka y'ibyagurishijwe",
+    "heldSales": "Ibigurisha byahagaritswe",
+    "returns": "Ibisubijwe",
+    "shift": "Shift",
+    "more": "Ibindi",
+    "shiftOpen": "Shift Ifunguye",
+    "shiftClosed": "Shift Yafunzwe",
+    "online": "Kuri interineti",
+    "offline": "Ntabwo kuri interineti",
+    "ebmOff": "EBM yazimye",
+    "noShiftOpen": "Nta shift ifunguye",
+    "shiftOpenStatus": "Shift ifunguye"
+  },
+  "cart": {
+    "title": "Igitebo",
+    "items": "ibintu",
+    "empty": "Igitebo cyawe ni ubusa",
+    "emptyDesc": "Ongeramo ibicuruzwa kuva ku ipaji ya POS kugira ngo utangire igurisha.",
+    "browseProducts": "Reba ibicuruzwa",
+    "clear": "Siba byose",
+    "holdSale": "Hagarika igurisha kugira ngo ugikomeze nyuma",
+    "holding": "Birahagarikwa…",
+    "customer": "Umukiriya",
+    "walkIn": "Umukiriya wisanze",
+    "total": "Igiteranyo",
+    "continue": "Komeza"
+  },
+  "checkout": {
+    "title": "Kwishyura",
+    "paymentMethod": "Uburyo bwo kwishyura",
+    "cash": "Amafaranga",
+    "momo": "MoMo",
+    "card": "Ikarita",
+    "credit": "Ideni",
+    "mixed": "Bivanze",
+    "cashTendered": "Amafaranga yatanzwe",
+    "changeDue": "Amasigazwa",
+    "cashAmount": "Amafaranga y'ibicu",
+    "balanceOnCredit": "Amasigazwa ku deni",
+    "fullAmountCredit": "Amafaranga yose azanditswe ku konti ya {{name}} nk'ideni.",
+    "itemsLabel": "Ibintu",
+    "charge": "Kwishyuza",
+    "processing": "Birakorwa…",
+    "selectCustomerFirst": "Banza uhitemo umukiriya.",
+    "offlineWarning": "Ntabwo uri kuri interineti — kwishyura ntibishoboka"
+  },
+  "common": {
+    "language": "Ururimi"
+  },
+  "languages": {
+    "en": "Icyongereza",
+    "rw": "Ikinyarwanda",
+    "fr": "Igifaransa",
+    "sw": "Igiswahili"
+  }
+}

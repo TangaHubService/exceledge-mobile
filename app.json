@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Excel Edge POS",
+    "slug": "exceledge-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/android-icon-foreground.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#003D2C",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-foreground.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.niyobertin.exceledgemobile"
+    },
+    "web": {
+      "favicon": "./assets/android-icon-foreground.png"
+    },
+    "splash": {
+      "image": "./assets/android-icon-foreground.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#003D2C"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-sharing",
+      "expo-localization",
+      "expo-mail-composer"
+    ]
+  }
+}
