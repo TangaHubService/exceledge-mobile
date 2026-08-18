@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
 import { useCartStore, selectCartSubtotal } from '../../store/cartStore';
@@ -11,6 +11,7 @@ import { useShiftStore } from '../../store/shiftStore';
 import { useAuthStore } from '../../store/authStore';
 import { createSale } from '../../api/sales';
 import type { SplitPayment } from '../../api/sales';
+import { getOrgSettings } from '../../api/orgSettings';
 import { useIsOffline } from '../../components/OfflineBanner';
 import { colors } from '../../theme';
 
@@ -46,6 +47,23 @@ export default function CheckoutScreen() {
   const [method, setMethod] = useState<PayMethod>('CASH');
   const [mixedCash, setMixedCash] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const settingsQuery = useQuery({ queryKey: ['org-settings'], queryFn: getOrgSettings, retry: false });
+  const enabledMethods = settingsQuery.data?.preferences.enabledPaymentMethods ?? [];
+  const availableMethods = useMemo(
+    () =>
+      METHODS.filter((item) =>
+        item.key === 'MIXED' ? enabledMethods.length >= 2 : enabledMethods.includes(item.key)
+      ),
+    [enabledMethods]
+  );
+
+  useEffect(() => {
+    if (availableMethods.length === 0) return;
+    if (!availableMethods.some((item) => item.key === method)) {
+      setMethod(availableMethods[0].key);
+    }
+  }, [availableMethods, method]);
 
   const mixedCashValue = useMemo(
     () => Math.min(Math.max(0, Number(mixedCash.replace(/,/g, '')) || 0), subtotal),
@@ -162,7 +180,7 @@ export default function CheckoutScreen() {
           <Text className="mb-3 text-[16px] font-semibold text-gray-950">Select Payment Method</Text>
 
           <View className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-            {METHODS.map((item, index) => {
+            {availableMethods.map((item, index) => {
               const selected = item.key === method;
               return (
                 <Pressable

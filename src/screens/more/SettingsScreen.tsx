@@ -62,7 +62,6 @@ export default function SettingsScreen() {
     ? new Date(ebmQuery.data.lastContact).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : 'Not available';
 
-  const unsupported = (title: string, detail: string) => Alert.alert(title, detail);
   const handleLogout = () => Alert.alert('Log out?', 'You will need to sign in again to use Excel Edge POS.', [
     { text: 'Cancel', style: 'cancel' },
     {
@@ -83,7 +82,7 @@ export default function SettingsScreen() {
       <ScrollView className="bg-[#F8F9F8]" contentContainerStyle={{ padding: 16, paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
         <View className="overflow-hidden rounded-xl border border-gray-100 bg-white" style={{ shadowColor: '#0B241A', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
           <SettingRow icon="person-outline" title="Profile & Account" subtitle="View your profile, branch and terminal" onPress={() => navigation.navigate('ProfileAccount')} />
-          <SettingRow icon="print-outline" title="Printer Settings" subtitle="Connect and manage your printer" onPress={() => unsupported('Printer Settings', 'Receipts currently use the device print dialog. Direct Bluetooth printer pairing is not configured in this mobile build.')} />
+          <SettingRow icon="print-outline" title="Printer Settings" subtitle="Receipt printing and auto-print" onPress={() => navigation.navigate('PrinterSettings')} />
           <SettingRow
             icon="document-text-outline"
             title="EBM Settings"
@@ -96,7 +95,7 @@ export default function SettingsScreen() {
               </View>
             )}
           />
-          <SettingRow icon="card-outline" title="Payment Methods" subtitle="Manage enabled payment methods" onPress={() => unsupported('Payment Methods', 'Available payment methods are controlled by the organization and the backend checkout configuration.')} />
+          <SettingRow icon="card-outline" title="Payment Methods" subtitle="Choose which payment methods appear at checkout" onPress={() => navigation.navigate('PaymentMethods')} />
           <SettingRow
             icon="cloud-upload-outline"
             title="Offline & Sync"
@@ -110,8 +109,8 @@ export default function SettingsScreen() {
             )}
           />
           <SettingRow icon="globe-outline" title="Language" subtitle="Choose your preferred language"><LanguageSwitcher dark={false} /></SettingRow>
-          <SettingRow icon="lock-closed-outline" title="Security" subtitle="PIN, biometric login and auto lock" onPress={() => unsupported('Security', 'Secure token storage is enabled. PIN and biometric unlock are not configured in this build.')} />
-          <SettingRow icon="information-circle-outline" title="About & Support" subtitle="App information, support and diagnostics" onPress={() => unsupported('Excel Edge POS', 'Version 1.0.0\nUse your organization support contact for account or device assistance.')} />
+          <SettingRow icon="lock-closed-outline" title="Security" subtitle="PIN, app lock and auto-lock" onPress={() => navigation.navigate('Security')} />
+          <SettingRow icon="information-circle-outline" title="About & Support" subtitle="App information, support and diagnostics" onPress={() => navigation.navigate('About')} />
           <SettingRow icon="log-out-outline" title="Logout" subtitle="Sign out of your account" danger onPress={handleLogout} />
         </View>
       </ScrollView>

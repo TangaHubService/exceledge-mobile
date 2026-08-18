@@ -30,7 +30,19 @@
       "expo-secure-store",
       "expo-sharing",
       "expo-localization",
-      "expo-mail-composer"
-    ]
+      "expo-mail-composer",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Excel Edge POS uses the camera to scan product barcodes at checkout."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6506d6e5-caa9-415d-a666-50f1f62c86ee"
+      }
+    },
+    "owner": "niyobertin"
   }
 }

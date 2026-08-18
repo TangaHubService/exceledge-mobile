@@ -10,6 +10,7 @@ export interface Branch {
   phone?: string | null;
   status?: 'ACTIVE' | 'INACTIVE';
   isDefault?: boolean;
+  isPrimary?: boolean;
   bhfId?: string | null;
   _count?: { sales: number; batches: number; userBranches: number };
 }

@@ -1,190 +1,161 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Image,
-  StyleSheet,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
 import { login } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
-import { LanguageSwitcher } from '../../components/LanguageSwitcher';
-import { colors } from '../../theme';
+import type { RootStackParamList } from '../../navigation/RootNavigator';
+import {
+  AuthButton,
+  AuthInput,
+  AuthLogo,
+  AuthNotice,
+  AuthScaffold,
+} from '../../components/AuthScaffold';
+
+type Navigation = NativeStackNavigationProp<RootStackParamList, 'Login'>;
+
+function apiError(error: unknown, fallback: string): string {
+  const responseMessage = (error as { response?: { data?: { error?: string } } })?.response?.data?.error;
+  return responseMessage || fallback;
+}
 
 export default function LoginScreen() {
   const { t } = useTranslation();
+  const navigation = useNavigation<Navigation>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const setSession = useAuthStore((s) => s.setSession);
+  const [formError, setFormError] = useState<string | null>(null);
+  const setSession = useAuthStore((state) => state.setSession);
 
   const mutation = useMutation({
     mutationFn: login,
     onSuccess: (data) => setSession(data),
   });
 
+  const submit = () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setFormError(t('auth.emailRequired'));
+      return;
+    }
+    if (!password) {
+      setFormError(t('auth.passwordRequired'));
+      return;
+    }
+    if (mutation.isPending) return;
+    setFormError(null);
+    mutation.mutate({ email: normalizedEmail, password });
+  };
+
   const errorMessage =
-    (mutation.error as any)?.response?.data?.error ??
-    (mutation.isError ? t('auth.loginError') : null);
+    formError || (mutation.isError ? apiError(mutation.error, t('auth.loginError')) : null);
 
   return (
-    <SafeAreaView className="flex-1 overflow-hidden" style={{ backgroundColor: colors.brand.darker }}>
-      <StatusBar style="light" />
-      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <View style={styles.topGlow} />
-        <View style={styles.waveBack} />
-        <View style={styles.waveMiddle} />
-        <View style={styles.waveFront} />
+    <AuthScaffold>
+      <View style={styles.logoSection}>
+        <AuthLogo />
       </View>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1"
-      >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View>
-            <Image
-              source={require('../../../assets/android-icon-foreground.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
 
-            <View className="mt-10">
-              <Text className="text-[27px] font-extrabold text-white">Welcome Back</Text>
-              <Text className="mt-1.5 text-[16px] text-white/80">Sign in to continue</Text>
-            </View>
+      <View style={styles.heading}>
+        <Text style={styles.title}>{t('auth.welcomeBack')}</Text>
+        <Text style={styles.subtitle}>{t('auth.signInToContinue')}</Text>
+      </View>
 
-            <View className="mt-9 rounded-lg bg-white p-1.5">
-              <Text className="px-2.5 pb-1.5 pt-2 text-[14px] text-gray-700">Username / Phone / Employee ID</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder="Username / Phone / Employee ID"
-                placeholderTextColor={colors.text.muted}
-                className="min-h-12 rounded-md border border-gray-200 bg-white px-3.5 text-[16px] font-semibold text-gray-900"
-              />
+      <View style={styles.form}>
+        <AuthInput
+          autoCapitalize="none"
+          autoComplete="email"
+          autoCorrect={false}
+          keyboardType="email-address"
+          onChangeText={(value) => {
+            setEmail(value);
+            setFormError(null);
+            if (mutation.isError) mutation.reset();
+          }}
+          placeholder={t('auth.emailPlaceholder')}
+          returnKeyType="next"
+          textContentType="username"
+          value={email}
+        />
 
-              <Text className="mb-1.5 mt-5 px-2.5 text-[14px] text-gray-700">Password</Text>
-              <View className="min-h-12 flex-row items-center rounded-md border border-gray-200 bg-white px-3.5">
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  placeholder="••••••••"
-                  placeholderTextColor={colors.text.muted}
-                  className="flex-1 py-3 text-[16px] font-semibold text-gray-900"
-                />
-                <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={10}>
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#0B0D0C" />
-                </Pressable>
-              </View>
-            </View>
+        <View style={styles.fieldSpacing}>
+          <AuthInput
+            autoCapitalize="none"
+            autoComplete="current-password"
+            onChangeText={(value) => {
+              setPassword(value);
+              setFormError(null);
+              if (mutation.isError) mutation.reset();
+            }}
+            onSubmitEditing={submit}
+            onToggleHidden={() => setShowPassword((visible) => !visible)}
+            placeholder={t('auth.password')}
+            returnKeyType="go"
+            secureTextEntry={!showPassword}
+            textContentType="password"
+            hidden={!showPassword}
+            value={password}
+          />
+        </View>
 
-            {errorMessage ? (
-              <Text className="mt-2 text-[13px] text-red-300">{errorMessage}</Text>
-            ) : null}
-
-            <Pressable
-              onPress={() => mutation.mutate({ email, password })}
-              disabled={!email || !password || mutation.isPending}
-              className="mt-4 min-h-12 items-center justify-center rounded-lg bg-brand disabled:opacity-50"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.18,
-                shadowRadius: 6,
-                elevation: 4,
-              }}
-            >
-              {mutation.isPending ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-[17px] font-medium text-white">Login</Text>
-              )}
-            </Pressable>
-
-            <Pressable className="mt-5 items-center">
-              <Text className="text-[16px] text-white/90">Forgot Password?</Text>
-            </Pressable>
-
-            <View className="mt-7 items-center">
-              <LanguageSwitcher appearance="plain" />
-            </View>
+        {errorMessage ? (
+          <View style={styles.errorSpacing}>
+            <AuthNotice message={errorMessage} />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        ) : null}
+
+        <View style={styles.buttonSpacing}>
+          <AuthButton
+            loading={mutation.isPending}
+            onPress={submit}
+            title={t('auth.login')}
+          />
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={() => navigation.navigate('ForgotPassword')}
+          style={({ pressed }) => [styles.forgotButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.forgotText}>{t('auth.forgotPassword')}</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerBrand}>Excledge ERP</Text>
+      </View>
+    </AuthScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: 32,
-    paddingTop: 44,
-    paddingBottom: 40,
+  logoSection: { marginTop: 2, alignItems: 'flex-start' },
+  heading: { marginTop: 14 },
+  title: { color: '#FFFFFF', fontSize: 27, fontWeight: '800' },
+  subtitle: { marginTop: 6, color: 'rgba(255,255,255,0.8)', fontSize: 16 },
+  form: { marginTop: 24 },
+  fieldSpacing: { marginTop: 16 },
+  errorSpacing: { marginTop: 13 },
+  buttonSpacing: { marginTop: 20 },
+  forgotButton: {
+    alignSelf: 'center',
+    marginTop: 17,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
-  logo: {
-    width: 245,
-    height: 112,
-    alignSelf: 'flex-start',
+  forgotText: { color: 'rgba(255,255,255,0.92)', fontSize: 16, fontWeight: '500' },
+  footer: {
+    flex: 1,
+    minHeight: 54,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingTop: 34,
   },
-  topGlow: {
-    position: 'absolute',
-    top: 30,
-    left: -135,
-    width: 470,
-    height: 470,
-    borderRadius: 235,
-    backgroundColor: '#006443',
-    opacity: 0.2,
-  },
-  waveBack: {
-    position: 'absolute',
-    bottom: -142,
-    left: -180,
-    width: 720,
-    height: 255,
-    borderRadius: 180,
-    backgroundColor: '#006040',
-    opacity: 0.5,
-    transform: [{ rotate: '-13deg' }],
-  },
-  waveMiddle: {
-    position: 'absolute',
-    bottom: -102,
-    left: -105,
-    width: 680,
-    height: 150,
-    borderRadius: 150,
-    backgroundColor: '#008050',
-    opacity: 0.28,
-    transform: [{ rotate: '-10deg' }],
-  },
-  waveFront: {
-    position: 'absolute',
-    right: -310,
-    bottom: -165,
-    width: 720,
-    height: 300,
-    borderRadius: 200,
-    backgroundColor: '#00543B',
-    opacity: 0.62,
-    transform: [{ rotate: '12deg' }],
-  },
+  footerBrand: { color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: '600', letterSpacing: 0.3 },
+  pressed: { opacity: 0.55 },
 });

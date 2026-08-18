@@ -43,7 +43,7 @@ export function LanguageSwitcher({
           {NATIVE_NAMES[current]}
         </Text>
         {appearance === 'plain' ? (
-          <Ionicons name="chevron-down" size={19} color="#fff" style={{ marginLeft: 26 }} />
+          <Ionicons name="chevron-down" size={19} color={dark ? '#fff' : colors.text.secondary} style={{ marginLeft: 12 }} />
         ) : null}
       </Pressable>
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,8 +10,8 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
-import { getEbmReceipt, getSaleById } from '../../api/sales';
-import { useAuthStore } from '../../store/authStore';
+import { getInvoice } from '../../api/sales';
+import { API_URL } from '../../api/client';
 import { ReferenceBottomBar, ReferenceHeader, type ReferenceTab } from '../../components/ReferenceChrome';
 import { colors } from '../../theme';
 
@@ -27,72 +27,72 @@ const methods: Array<{ key: ShareMethod; label: string; icon: keyof typeof Ionic
   { key: 'LINK', label: 'Share PDF', icon: 'share-social', color: '#111827' },
 ];
 
-function money(value: number) {
-  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(value || 0))} RWF`;
-}
-
-function safe(value: unknown) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
+function money(value: number, currency: string) {
+  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(value || 0))} ${currency}`;
 }
 
 export default function PrintShareScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { mode, saleId, invoiceNumber, totalAmount } = route.params;
-  const organization = useAuthStore((s) => s.organizations.find((item) => item.id === s.activeOrganizationId));
   const [method, setMethod] = useState<ShareMethod>('EMAIL');
   const [recipient, setRecipient] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [isPreparing, setIsPreparing] = useState(false);
 
-  const saleQuery = useQuery({ queryKey: ['sale', saleId], queryFn: () => getSaleById(saleId) });
-  const receiptQuery = useQuery({ queryKey: ['ebmReceipt', saleId], queryFn: () => getEbmReceipt(saleId), retry: false });
-  const sale = saleQuery.data;
-  const invoice = sale?.invoiceNumber ?? invoiceNumber ?? sale?.saleNumber ?? `#${saleId}`;
-  const amount = Number(sale?.totalAmount ?? totalAmount);
-  const customerName = sale?.customer?.name ?? 'Customer';
+  const invoiceQuery = useQuery({
+    queryKey: ['invoice', saleId],
+    queryFn: () => getInvoice(saleId),
+    retry: 1,
+    // Fiscalization can complete just after checkout. Refresh while this screen
+    // is open so mobile receives the same updated invoice as the web app.
+    refetchInterval: 15_000,
+  });
+  const invoiceDocument = invoiceQuery.data;
+  const invoice = invoiceDocument?.invoice.invoiceNumber ?? invoiceNumber ?? `#${saleId}`;
+  const amount = Number(invoiceDocument?.totals.grandTotal ?? totalAmount);
+  const currency = invoiceDocument?.invoice.currency ?? invoiceDocument?.company.currency ?? 'RWF';
+  const customerName = invoiceDocument?.customer.name || 'Customer';
 
   useEffect(() => {
-    if (!sale) return;
-    if (!recipient) setRecipient(sale.customer?.email ?? sale.customer?.phone ?? '');
+    if (!invoiceDocument) return;
+    if (!recipient) setRecipient(invoiceDocument.customer.email ?? invoiceDocument.customer.phone ?? '');
     if (!subject) setSubject(`${mode === 'refund' ? 'Refund receipt' : 'Invoice'} ${invoice}`);
     if (!message) setMessage(`Dear ${customerName},\n\nPlease find attached ${mode === 'refund' ? 'refund receipt' : 'invoice'} ${invoice}.\n\nThank you!`);
-  }, [customerName, invoice, message, mode, recipient, sale, subject]);
+  }, [customerName, invoice, invoiceDocument, message, mode, recipient, subject]);
 
   const html = useMemo(() => {
-    const rows = (sale?.saleItems ?? []).map((item) => `
-      <tr>
-        <td>${safe(item.product?.name ?? item.serviceName ?? `Item #${item.productId}`)}</td>
-        <td style="text-align:center">${safe(item.quantity)}</td>
-        <td style="text-align:right">${safe(money(item.totalPrice))}</td>
-      </tr>`).join('');
-    return `<!doctype html><html><body style="font-family:-apple-system,Arial;padding:28px;color:#111827">
-      <h1 style="color:#00673e;margin-bottom:2px">${safe(organization?.name ?? 'Excel Edge POS')}</h1>
-      <p style="color:#6b7280;margin-top:0">${mode === 'refund' ? 'Refund Receipt' : 'Sales Invoice'}</p>
-      <hr style="border:0;border-top:1px solid #e5e7eb" />
-      <p><strong>Invoice:</strong> ${safe(invoice)}</p>
-      <p><strong>Date:</strong> ${safe(sale?.createdAt ? new Date(sale.createdAt).toLocaleString() : '')}</p>
-      <p><strong>Customer:</strong> ${safe(sale?.customer?.name ?? 'Walk-in Customer')}</p>
-      <table style="width:100%;border-collapse:collapse;margin-top:20px" cellpadding="10">
-        <thead><tr style="border-bottom:1px solid #d1d5db"><th style="text-align:left">Item</th><th>Qty</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <h2 style="text-align:right;color:#00673e">Total: ${safe(money(amount))}</h2>
-      ${receiptQuery.data?.ebm?.sdcId ? `<p><strong>SDC ID:</strong> ${safe(receiptQuery.data.ebm.sdcId)}</p>` : ''}
-      ${receiptQuery.data?.ebm?.ebmInvoiceNumber ? `<p><strong>EBM invoice:</strong> ${safe(receiptQuery.data.ebm.ebmInvoiceNumber)}</p>` : ''}
-    </body></html>`;
-  }, [amount, invoice, mode, organization?.name, receiptQuery.data, sale]);
+    if (!invoiceDocument?.renderedHtml) return null;
+    const assetBaseUrl = `${API_URL.replace(/\/api\/?$/, '')}/`;
+    // Expo Print expects a complete HTML document. The content itself comes
+    // unchanged from the canonical backend renderer shared with the web app.
+    return `<!doctype html><html><head><base href="${assetBaseUrl}"><meta name="viewport" content="width=device-width, initial-scale=1"><style>@page{size:A4 portrait;margin:6mm}html,body{margin:0;padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.rra-invoice .sheet{box-shadow:none!important;border-radius:0!important}</style></head><body>${invoiceDocument.renderedHtml}</body></html>`;
+  }, [invoiceDocument?.renderedHtml]);
+
+  const requireInvoiceHtml = () => {
+    if (html) return html;
+    Alert.alert(
+      invoiceQuery.isLoading ? 'Preparing invoice' : 'Invoice unavailable',
+      invoiceQuery.isLoading
+        ? 'The invoice is still loading. Please try again in a moment.'
+        : 'The official invoice could not be prepared. Check your connection and retry.',
+    );
+    return null;
+  };
 
   const printReceipt = async () => {
-    try { await Print.printAsync({ html }); }
+    const invoiceHtml = requireInvoiceHtml();
+    if (!invoiceHtml) return;
+    setIsPreparing(true);
+    try { await Print.printAsync({ html: invoiceHtml }); }
     catch (error: any) { Alert.alert('Print failed', error?.message ?? 'Could not open the print dialog.'); }
+    finally { setIsPreparing(false); }
   };
   const createPdf = async () => {
-    const { uri } = await Print.printToFileAsync({ html });
+    const invoiceHtml = requireInvoiceHtml();
+    if (!invoiceHtml) throw new Error('The official invoice is not ready yet.');
+    const { uri } = await Print.printToFileAsync({ html: invoiceHtml });
     const fileName = `${String(invoice).replace(/[^a-zA-Z0-9_-]+/g, '-')}.pdf`;
     const source = new File(uri);
     const namedPdf = new File(Paths.cache, fileName);
@@ -108,7 +108,12 @@ export default function PrintShareScreen() {
     });
   };
   const performAction = async () => {
-    const body = message || `${invoice} — ${money(amount)}`;
+    if (!html || isPreparing) {
+      requireInvoiceHtml();
+      return;
+    }
+    const body = message || `${invoice} — ${money(amount, currency)}`;
+    setIsPreparing(true);
     try {
       const pdfUri = await createPdf();
       if (method === 'EMAIL') {
@@ -127,6 +132,8 @@ export default function PrintShareScreen() {
       }
     } catch (error: any) {
       Alert.alert('Sharing failed', error?.message ?? 'Please try again.');
+    } finally {
+      setIsPreparing(false);
     }
   };
   const actionLabel = method === 'EMAIL' ? 'Email PDF' : method === 'WHATSAPP' ? 'Share PDF via WhatsApp' : method === 'SMS' ? 'Share PDF via Messages' : method === 'PDF' ? 'Save PDF' : 'Share PDF';
@@ -137,7 +144,7 @@ export default function PrintShareScreen() {
       <ReferenceHeader
         title={mode === 'refund' ? 'Refund Receipt' : 'Print & Share'}
         onBack={() => navigation.goBack()}
-        right={<Pressable onPress={printReceipt} className="h-11 w-11 items-center justify-center"><Ionicons name="print-outline" size={25} color="#fff" /></Pressable>}
+        right={<Pressable onPress={printReceipt} disabled={!html || isPreparing} className="h-11 w-11 items-center justify-center" style={{ opacity: html && !isPreparing ? 1 : 0.45 }}><Ionicons name="print-outline" size={25} color="#fff" /></Pressable>}
       />
       <View className="flex-1 bg-[#F8F9F8]">
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -147,6 +154,42 @@ export default function PrintShareScreen() {
               <Text className="ml-3 flex-1 text-[17px] font-extrabold text-green-700">{invoice}</Text>
               <View className="rounded-md bg-green-50 px-3 py-2"><Text className="text-[13px] font-semibold text-green-700">{mode === 'refund' ? 'Refunded' : 'Paid'}</Text></View>
             </View>
+            {invoiceDocument ? (
+              <View className="mt-4 flex-row rounded-lg border border-gray-100 bg-gray-50 p-3">
+                <View className="min-w-0 flex-1 pr-3">
+                  <Text className="text-[12px] text-gray-500">Customer</Text>
+                  <Text numberOfLines={1} className="mt-1 text-[14px] font-semibold text-gray-900">{customerName}</Text>
+                  <Text numberOfLines={1} className="mt-1 text-[12px] text-gray-500">{invoiceDocument.company.name}</Text>
+                </View>
+                <View className="items-end border-l border-gray-200 pl-3">
+                  <Text className="text-[12px] text-gray-500">Invoice total</Text>
+                  <Text className="mt-1 text-[15px] font-extrabold text-brand-dark">{money(amount, currency)}</Text>
+                </View>
+              </View>
+            ) : null}
+            {invoiceQuery.isLoading ? (
+              <View className="mt-4 flex-row items-center rounded-lg bg-brand-light p-3">
+                <ActivityIndicator size="small" color={colors.brand.dark} />
+                <Text className="ml-3 flex-1 text-[13px] leading-5 text-brand-dark">Preparing the same official invoice used on the web...</Text>
+              </View>
+            ) : invoiceQuery.isError || !html ? (
+              <View className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
+                <View className="flex-row items-start">
+                  <Ionicons name="alert-circle-outline" size={21} color="#B42318" />
+                  <Text className="ml-2 flex-1 text-[13px] leading-5 text-red-800">The official invoice could not be loaded. Check your connection, then retry.</Text>
+                </View>
+                <Pressable onPress={() => invoiceQuery.refetch()} className="mt-3 min-h-[44px] items-center justify-center rounded-lg bg-red-700">
+                  <Text className="text-[14px] font-bold text-white">Retry invoice</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View className="mt-4 flex-row items-center rounded-lg bg-brand-light p-3">
+                <Ionicons name={invoiceDocument?.certification.isCertified ? 'shield-checkmark' : 'document-text-outline'} size={21} color={colors.brand.dark} />
+                <Text className="ml-2 flex-1 text-[13px] leading-5 text-brand-dark">
+                  {invoiceDocument?.certification.isCertified ? 'RRA / EBM certified invoice ready.' : 'Invoice ready. EBM certification may still be processing.'}
+                </Text>
+              </View>
+            )}
             <Text className="mt-4 text-[15px] text-gray-600">Share via</Text>
             {methods.map((item, index) => {
               const selected = item.key === method;
@@ -187,9 +230,9 @@ export default function PrintShareScreen() {
                 </Text>
               </View>
             ) : null}
-            <Pressable onPress={performAction} className="mt-5 min-h-[52px] flex-row items-center justify-center rounded-lg bg-brand">
-              <Ionicons name={method === 'PDF' ? 'download-outline' : 'paper-plane-outline'} size={21} color="#fff" />
-              <Text className="ml-2 text-[16px] font-bold text-white">{actionLabel}</Text>
+            <Pressable onPress={performAction} disabled={!html || isPreparing} className="mt-5 min-h-[52px] flex-row items-center justify-center rounded-lg bg-brand" style={{ opacity: html && !isPreparing ? 1 : 0.5 }}>
+              {isPreparing ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name={method === 'PDF' ? 'download-outline' : 'paper-plane-outline'} size={21} color="#fff" />}
+              <Text className="ml-2 text-[16px] font-bold text-white">{isPreparing ? 'Preparing PDF...' : actionLabel}</Text>
             </Pressable>
           </View>
         </ScrollView>

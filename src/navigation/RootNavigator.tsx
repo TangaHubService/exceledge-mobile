@@ -3,9 +3,12 @@ import { View, ActivityIndicator } from 'react-native';
 import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import LoginScreen from '../screens/auth/LoginScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import OpenShiftScreen from '../screens/shift/OpenShiftScreen';
 import AppTabs from './AppTabs';
 import ProductSelectionScreen from '../screens/home/ProductSelectionScreen';
+import BarcodeScannerScreen from '../screens/home/BarcodeScannerScreen';
 import PumpSaleScreen from '../screens/home/PumpSaleScreen';
 import CartScreen from '../screens/cart/CartScreen';
 import CheckoutScreen from '../screens/cart/CheckoutScreen';
@@ -26,15 +29,22 @@ import ReturnApprovalScreen from '../screens/returns/ReturnApprovalScreen';
 import HeldSalesScreen from '../screens/held/HeldSalesScreen';
 import OfflineModeScreen from '../screens/more/OfflineModeScreen';
 import MoreScreen from '../screens/more/MoreScreen';
+import PrinterSettingsScreen from '../screens/more/PrinterSettingsScreen';
+import PaymentMethodsScreen from '../screens/more/PaymentMethodsScreen';
+import SecurityScreen from '../screens/more/SecurityScreen';
+import AboutScreen from '../screens/more/AboutScreen';
 import RefundReceiptScreen from '../screens/returns/RefundReceiptScreen';
 import type { Product } from '../api/products';
 import { colors } from '../theme';
 
 export type RootStackParamList = {
   Login: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: { email: string };
   OpenShift: undefined;
   AppTabs: { screen?: 'Home' | 'Sales' | 'Products' | 'Customers' | 'More' } | undefined;
   ProductSelection: undefined;
+  BarcodeScanner: undefined;
   PumpSale: { product: Product };
   Cart: undefined;
   CustomerPicker: { afterSave?: 'CHECKOUT' | 'BACK'; mode?: 'SELECT' | 'NEW' } | undefined;
@@ -55,6 +65,10 @@ export type RootStackParamList = {
   HeldSales: undefined;
   ProfileAccount: undefined;
   OfflineMode: undefined;
+  PrinterSettings: undefined;
+  PaymentMethods: undefined;
+  Security: undefined;
+  About: undefined;
   CloseShift: undefined;
   StartReturn: undefined;
   SelectReturnItems: { saleId: number };
@@ -96,6 +110,11 @@ export default function RootNavigator() {
           <Stack.Screen name="OpenShift" component={OpenShiftScreen} />
           <Stack.Screen name="AppTabs" component={AppTabs} />
           <Stack.Screen name="ProductSelection" component={ProductSelectionScreen} />
+          <Stack.Screen
+            name="BarcodeScanner"
+            component={BarcodeScannerScreen}
+            options={{ animation: 'slide_from_bottom' }}
+          />
           <Stack.Screen name="PumpSale" component={PumpSaleScreen} options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="Cart" component={CartScreen} options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ animation: 'slide_from_bottom' }} />
@@ -113,6 +132,10 @@ export default function RootNavigator() {
           <Stack.Screen name="HeldSales" component={HeldSalesScreen} />
           <Stack.Screen name="ProfileAccount" component={MoreScreen} />
           <Stack.Screen name="OfflineMode" component={OfflineModeScreen} />
+          <Stack.Screen name="PrinterSettings" component={PrinterSettingsScreen} />
+          <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
+          <Stack.Screen name="Security" component={SecurityScreen} />
+          <Stack.Screen name="About" component={AboutScreen} />
           <Stack.Screen name="CloseShift" component={CloseShiftScreen} options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="StartReturn" component={StartReturnScreen} />
           <Stack.Screen name="SelectReturnItems" component={SelectReturnItemsScreen} />
@@ -123,7 +146,11 @@ export default function RootNavigator() {
           <Stack.Screen name="RefundReceipt" component={RefundReceiptScreen} />
         </>
       ) : (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+        </>
       )}
     </Stack.Navigator>
   );

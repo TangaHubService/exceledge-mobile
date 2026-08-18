@@ -1,11 +1,16 @@
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { View, Text, Pressable, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import * as Print from 'expo-print';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
-import { getSaleById } from '../../api/sales';
+import { getSaleById, getInvoice } from '../../api/sales';
+import { API_URL } from '../../api/client';
+import { usePrinterStore } from '../../store/printerStore';
+import { useIsOffline } from '../../components/OfflineBanner';
 import { colors } from '../../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -56,6 +61,31 @@ export default function SaleSuccessScreen() {
     queryKey: ['sale', saleId],
     queryFn: () => getSaleById(saleId),
   });
+  const autoPrint = usePrinterStore((s) => s.autoPrintAfterSale);
+  const copies = usePrinterStore((s) => s.copies);
+  const isOffline = useIsOffline();
+  const autoPrinted = useRef(false);
+
+  useEffect(() => {
+    if (!autoPrint || autoPrinted.current || isOffline || !saleQuery.data) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const invoiceDocument = await getInvoice(saleId);
+        if (cancelled || !invoiceDocument?.renderedHtml) return;
+        const html = `<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>@page{size:A4 portrait;margin:6mm}html,body{margin:0;padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.rra-invoice .sheet{box-shadow:none!important;border-radius:0!important}</style></head><body>${invoiceDocument.renderedHtml}</body></html>`;
+        for (let i = 0; i < copies; i += 1) {
+          await Print.printAsync({ html });
+        }
+      } catch (error: any) {
+        Alert.alert('Auto-print failed', error?.message ?? 'The receipt could not be printed.');
+      }
+    })();
+    autoPrinted.current = true;
+    return () => {
+      cancelled = true;
+    };
+  }, [autoPrint, copies, isOffline, saleId, saleQuery.data]);
 
   const sale = saleQuery.data;
   const payment = sale?.salePayments?.[0];

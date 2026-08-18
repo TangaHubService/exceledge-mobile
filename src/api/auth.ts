@@ -47,6 +47,32 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   return data;
 }
 
+export interface ApiMessageResponse {
+  message: string;
+}
+
+export async function requestPasswordReset(payload: { email: string }): Promise<ApiMessageResponse> {
+  const { data } = await apiClient.post<ApiMessageResponse>('/auth/request-password-reset', payload);
+  return data;
+}
+
+export async function verifyPasswordResetCode(payload: {
+  email: string;
+  code: string;
+}): Promise<ApiMessageResponse> {
+  const { data } = await apiClient.post<ApiMessageResponse>('/auth/verify-password-reset-code', payload);
+  return data;
+}
+
+export async function resetPassword(payload: {
+  email: string;
+  code: string;
+  newPassword: string;
+}): Promise<ApiMessageResponse> {
+  const { data } = await apiClient.post<ApiMessageResponse>('/auth/reset-password', payload);
+  return data;
+}
+
 export async function logout(): Promise<void> {
   try {
     await apiClient.post('/auth/logout');
@@ -55,7 +81,24 @@ export async function logout(): Promise<void> {
   }
 }
 
-export async function getCurrentUser(): Promise<LoginResponse['user']> {
+export interface CurrentUserProfile {
+  user: LoginResponse['user'];
+  organizations: OrganizationSummary[];
+}
+
+// GET /auth/me returns a flat object (id, name, role, organizations, ...),
+// not the { user, organizations } shape login uses — reshape it here so
+// callers get the same session shape regardless of which endpoint fetched it.
+export async function getCurrentUser(): Promise<CurrentUserProfile> {
   const { data } = await apiClient.get('/auth/me');
-  return data?.user ?? data ?? null;
+  return {
+    user: {
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      role: data.role,
+      requirePasswordChange: data.requirePasswordChange,
+    },
+    organizations: data.organizations ?? [],
+  };
 }

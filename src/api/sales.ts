@@ -223,6 +223,54 @@ export interface EbmReceiptData {
   ebmInvoiceNumber?: string | null;
 }
 
+export interface InvoiceCompany {
+  name: string;
+  currency?: string | null;
+}
+
+export interface InvoiceCustomer {
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+}
+
+export interface InvoiceDetails {
+  id: string;
+  saleNumber: string;
+  invoiceNumber: string;
+  receiptNumber: string;
+  invoiceDate: string;
+  status: string;
+  currency: string;
+}
+
+export interface InvoiceTotals {
+  paid: number;
+  balance: number;
+  grandTotal: number;
+}
+
+export interface CanonicalInvoice {
+  company: InvoiceCompany;
+  customer: InvoiceCustomer;
+  invoice: InvoiceDetails;
+  totals: InvoiceTotals;
+  certification: {
+    isCertified: boolean;
+    certificateText?: string | null;
+  };
+  renderedHtml?: string | null;
+}
+
+/**
+ * Fetch the same fully composed invoice document used by the web app. Mobile
+ * printing and sharing must use `renderedHtml` instead of rebuilding a receipt.
+ */
+export async function getInvoice(saleId: number): Promise<CanonicalInvoice> {
+  const { data } = await apiClient.get(`/sales/${orgId()}/invoices/${saleId}`);
+  return data?.data ?? data;
+}
+
 export async function getEbmReceipt(saleId: number): Promise<{ status: 'success' | 'pending'; ebm?: EbmReceiptData }> {
   try {
     const { data } = await apiClient.get(`/sales/${orgId()}/${saleId}/ebm-receipt`);

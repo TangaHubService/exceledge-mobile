@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -6,9 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore, isFullBranchAccessRole } from '../../store/authStore';
 import { useShiftStore } from '../../store/shiftStore';
-import { getBranches } from '../../api/branches';
+import { getBranches, getUserBranches } from '../../api/branches';
 import { logout as apiLogout } from '../../api/auth';
 import { Card, ScreenHeader } from '../../components/ui';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
@@ -33,12 +33,32 @@ export default function MoreScreen() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const organization = organizations.find((o) => o.id === activeOrganizationId);
+  const orgRole = organization?.role ?? user?.role;
+  const fullBranchAccess = isFullBranchAccessRole(orgRole);
 
-  const { data: branches = [], isLoading: branchesLoading } = useQuery({
+  // Full-access roles (ADMIN / SYSTEM_OWNER) see every branch. Everyone else is
+  // limited to the branches they were assigned to when invited — selecting an
+  // unassigned branch would be rejected by the backend branch authorization.
+  const { data: allBranches = [], isLoading: branchesLoading } = useQuery({
     queryKey: ['branches', activeOrganizationId],
     queryFn: () => getBranches(activeOrganizationId ?? undefined),
-    enabled: !!activeOrganizationId,
+    enabled: !!activeOrganizationId && fullBranchAccess,
   });
+  const { data: userBranches = [], isLoading: userBranchesLoading } = useQuery({
+    queryKey: ['user-branches', activeOrganizationId],
+    queryFn: () => getUserBranches(activeOrganizationId ?? undefined),
+    enabled: !!activeOrganizationId && !fullBranchAccess,
+  });
+
+  const branches = fullBranchAccess ? allBranches : userBranches;
+  const loadingBranches = fullBranchAccess ? branchesLoading : userBranchesLoading;
+
+  // Auto-join limited users to their primary (invited) branch.
+  useEffect(() => {
+    if (fullBranchAccess || userBranches.length === 0) return;
+    const primary = userBranches.find((b) => b.isPrimary)?.id ?? userBranches[0].id;
+    if (activeBranchId !== primary) setActiveBranch(primary);
+  }, [fullBranchAccess, userBranches, activeBranchId, setActiveBranch]);
 
   const currentBranch = branches.find((b) => b.id === activeBranchId);
 
@@ -60,7 +80,7 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-brand-darker" edges={['top']}>
-      <ScreenHeader title="More" subtitle="Settings and account" />
+      <ScreenHeader title="Profile & Account" subtitle="Your profile, organization and branch" back onBack={() => navigation.goBack()} />
       <ScrollView className="bg-background" contentContainerStyle={{ padding: 16, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
 
         {/* Profile */}
@@ -102,7 +122,7 @@ export default function MoreScreen() {
             <View className="ml-3 flex-1">
               <Text className="text-[15px] font-semibold text-gray-800">{currentBranch?.name ?? 'Select branch'}</Text>
               <Text style={typography.caption}>
-                {branchesLoading ? 'Loading branches…' : activeBranchId ? 'Branch for sales & stock' : 'Tap to choose your branch'}
+                {loadingBranches ? 'Loading branches…' : activeBranchId ? 'Branch for sales & stock' : fullBranchAccess ? 'Tap to choose your branch' : 'Your assigned branch'}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.text.muted} />
@@ -207,12 +227,14 @@ export default function MoreScreen() {
           <Pressable className="rounded-xl bg-white p-5" onPress={() => {}}>
             <Text style={typography.heading}>Choose branch</Text>
             <Text style={typography.caption} className="mt-1">Branch-scoped products, stock and sales will use this branch.</Text>
-            {branchesLoading ? (
+            {loadingBranches ? (
               <View className="items-center py-10">
                 <ActivityIndicator color={colors.brand.DEFAULT} />
               </View>
             ) : branches.length === 0 ? (
-              <Text style={typography.body} className="py-8 text-center">No branches available.</Text>
+              <Text style={typography.body} className="py-8 text-center">
+                {fullBranchAccess ? 'No branches available.' : 'No branch has been assigned to your account. Contact your organization admin.'}
+              </Text>
             ) : (
               branches.map((b) => {
                 const selected = b.id === activeBranchId;
