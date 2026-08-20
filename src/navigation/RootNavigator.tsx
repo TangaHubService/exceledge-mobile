@@ -13,7 +13,6 @@ import PumpSaleScreen from '../screens/home/PumpSaleScreen';
 import CartScreen from '../screens/cart/CartScreen';
 import CheckoutScreen from '../screens/cart/CheckoutScreen';
 import MobileMoneyScreen from '../screens/cart/MobileMoneyScreen';
-import PaymentProcessingScreen from '../screens/cart/PaymentProcessingScreen';
 import EbmProcessingScreen from '../screens/cart/EbmProcessingScreen';
 import SaleSuccessScreen from '../screens/cart/SaleSuccessScreen';
 import PrintShareScreen from '../screens/cart/PrintShareScreen';
@@ -50,14 +49,6 @@ export type RootStackParamList = {
   CustomerPicker: { afterSave?: 'CHECKOUT' | 'BACK'; mode?: 'SELECT' | 'NEW' } | undefined;
   Checkout: undefined;
   MobileMoney: { amount: number };
-  PaymentProcessing: {
-    amount: number;
-    provider: 'MTN_MOMO' | 'AIRTEL_MONEY';
-    phone: string;
-    reference: string;
-    transactionId: string;
-    rail: 'PAYPACK' | 'MTN_MOMO';
-  };
   EbmProcessing: { saleId: number; mode: 'sale' | 'refund'; invoiceNumber?: string; totalAmount: number };
   SaleSuccess: { saleId: number; invoiceNumber?: string; totalAmount: number };
   PrintShare: { mode: 'sale' | 'refund'; saleId: number; invoiceNumber?: string; totalAmount: number };
@@ -119,11 +110,6 @@ export default function RootNavigator() {
           <Stack.Screen name="Cart" component={CartScreen} options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="MobileMoney" component={MobileMoneyScreen} options={{ animation: 'slide_from_bottom' }} />
-          <Stack.Screen
-            name="PaymentProcessing"
-            component={PaymentProcessingScreen}
-            options={{ gestureEnabled: false, animation: 'fade' }}
-          />
           <Stack.Screen name="EbmProcessing" component={EbmProcessingScreen} options={{ gestureEnabled: false }} />
           <Stack.Screen name="SaleSuccess" component={SaleSuccessScreen} options={{ gestureEnabled: false }} />
           <Stack.Screen name="PrintShare" component={PrintShareScreen} />

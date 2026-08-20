@@ -36,7 +36,7 @@ export interface SalePayment {
   metadata?: {
     phone?: string;
     provider?: MobileMoneyProvider;
-    rail?: MobileMoneyRail;
+    rail?: 'PAYPACK' | 'MTN_MOMO';
     customerReference?: string;
     [key: string]: unknown;
   } | null;
@@ -94,17 +94,6 @@ export interface CreateSaleInput {
 }
 
 export type MobileMoneyProvider = 'MTN_MOMO' | 'AIRTEL_MONEY';
-export type MobileMoneyRail = 'PAYPACK' | 'MTN_MOMO';
-export type MobileMoneyStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
-
-export interface MobileMoneyTransaction {
-  transactionId: string;
-  reference: string;
-  provider: MobileMoneyProvider;
-  rail: MobileMoneyRail;
-  status: MobileMoneyStatus;
-  message?: string;
-}
 
 interface Paginated<T> {
   data: T[];
@@ -119,39 +108,6 @@ function orgId(): number {
 
 export async function createSale(input: CreateSaleInput): Promise<Sale> {
   const { data } = await apiClient.post(`/sales/${orgId()}`, input);
-  return data?.data ?? data;
-}
-
-export async function initiateMobileMoneyPayment(input: {
-  amount: number;
-  provider: MobileMoneyProvider;
-  phone: string;
-  reference?: string;
-  branchId?: number | null;
-}): Promise<MobileMoneyTransaction> {
-  const { data } = await apiClient.post(`/sales/${orgId()}/mobile-money/initiate`, input);
-  return data?.data ?? data;
-}
-
-export async function getMobileMoneyPaymentStatus(
-  transactionId: string,
-  rail: MobileMoneyRail
-): Promise<{ transactionId: string; status: MobileMoneyStatus; message?: string }> {
-  const { data } = await apiClient.get(
-    `/sales/${orgId()}/mobile-money/${encodeURIComponent(transactionId)}/status`,
-    { params: { rail } }
-  );
-  return data?.data ?? data;
-}
-
-export async function cancelMobileMoneyPayment(
-  transactionId: string,
-  rail: MobileMoneyRail
-): Promise<{ transactionId: string; status: MobileMoneyStatus; message?: string }> {
-  const { data } = await apiClient.post(
-    `/sales/${orgId()}/mobile-money/${encodeURIComponent(transactionId)}/cancel`,
-    { rail }
-  );
   return data?.data ?? data;
 }
 

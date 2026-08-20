@@ -13,12 +13,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
-import { useCartStore } from '../../store/cartStore';
+import { useCartStore, selectCartSubtotal } from '../../store/cartStore';
+import { useShiftStore } from '../../store/shiftStore';
 import { useAuthStore } from '../../store/authStore';
-import { initiateMobileMoneyPayment } from '../../api/sales';
+import { createSale } from '../../api/sales';
 import type { MobileMoneyProvider } from '../../api/sales';
 import { colors } from '../../theme';
 
@@ -42,7 +43,12 @@ function ProviderBadge({ provider }: { provider: MobileMoneyProvider }) {
 export default function MobileMoneyScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
+  const queryClient = useQueryClient();
   const customer = useCartStore((state) => state.customer);
+  const items = useCartStore((state) => state.items);
+  const clear = useCartStore((state) => state.clear);
+  const subtotal = useCartStore(selectCartSubtotal);
+  const activeShift = useShiftStore((state) => state.activeShift);
   const activeBranchId = useAuthStore((state) => state.activeBranchId);
   const { amount } = route.params;
 
@@ -55,29 +61,56 @@ export default function MobileMoneyScreen() {
   const canConfirm = /^(?:\+?250|0)?7\d{8}$/.test(normalizedPhone) && amount > 0;
   const formattedAmount = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amount);
 
-  const initiation = useMutation({
-    mutationFn: () => initiateMobileMoneyPayment({
-      amount,
-      provider,
-      phone: normalizedPhone,
-      reference: reference.trim() || undefined,
-      branchId: activeBranchId,
-    }),
-    onSuccess: (transaction) => {
-      navigation.navigate('PaymentProcessing', {
-        amount,
-        provider,
-        phone: normalizedPhone,
-        reference: transaction.reference,
-        transactionId: transaction.transactionId,
-        rail: transaction.rail,
+  const saleMutation = useMutation({
+    mutationFn: async () => {
+      if (!customer) throw new Error('Customer information is missing.');
+      if (items.length === 0) throw new Error('The cart is empty.');
+      if (Math.abs(subtotal - amount) > 0.01) throw new Error('The cart total changed during payment.');
+
+      const ref = reference.trim() || `MM-${Date.now()}`;
+      return createSale({
+        customerId: customer.id,
+        items: items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          itemType: item.itemType,
+        })),
+        paymentType: 'MOBILE_MONEY',
+        cashAmount: amount,
+        debtAmount: 0,
+        insuranceAmount: 0,
+        shiftId: activeShift?.id ?? undefined,
+        branchId: activeBranchId,
+        payments: [{
+          paymentMethod: provider,
+          amount,
+          reference: ref,
+          metadata: {
+            phone: normalizedPhone,
+            provider,
+            customerReference: reference.trim() || undefined,
+          },
+        }],
+      });
+    },
+    onSuccess: (sale) => {
+      clear();
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['shift'] });
+      navigation.replace('EbmProcessing', {
+        saleId: sale.id,
+        mode: 'sale',
+        invoiceNumber: sale.invoiceNumber ?? sale.saleNumber,
+        totalAmount: sale.totalAmount ?? amount,
       });
     },
   });
 
-  const errorMessage = (initiation.error as any)?.response?.data?.error
-    ?? (initiation.error as any)?.response?.data?.message
-    ?? (initiation.error as any)?.message;
+  const errorMessage = (saleMutation.error as any)?.response?.data?.error
+    ?? (saleMutation.error as any)?.response?.data?.message
+    ?? (saleMutation.error as any)?.message;
 
   return (
     <SafeAreaView className="flex-1 bg-brand-darker" edges={['top']}>
@@ -159,7 +192,7 @@ export default function MobileMoneyScreen() {
           <View className="mt-5 flex-row rounded-xl bg-[#EEF7F2] px-4 py-4">
             <Ionicons name="information-circle" size={21} color={colors.brand.dark} />
             <Text className="ml-3 flex-1 text-[13px] leading-5 text-gray-700">
-              Please approve the payment request on your phone when prompted.
+              The payment will be recorded as a mobile money payment. No external request is sent to the mobile money provider.
             </Text>
           </View>
 
@@ -170,19 +203,19 @@ export default function MobileMoneyScreen() {
           ) : null}
 
           <Pressable
-            onPress={() => initiation.mutate()}
-            disabled={!canConfirm || initiation.isPending}
+            onPress={() => saleMutation.mutate()}
+            disabled={!canConfirm || saleMutation.isPending}
             className="mt-5 min-h-[54px] flex-row items-center justify-center rounded-xl bg-brand disabled:opacity-50"
           >
-            {initiation.isPending ? <ActivityIndicator color="#fff" /> : null}
-            <Text className={`${initiation.isPending ? 'ml-2' : ''} text-[17px] font-bold text-white`}>
-              {initiation.isPending ? 'Sending Request…' : 'Confirm Payment'}
+            {saleMutation.isPending ? <ActivityIndicator color="#fff" /> : null}
+            <Text className={`${saleMutation.isPending ? 'ml-2' : ''} text-[17px] font-bold text-white`}>
+              {saleMutation.isPending ? 'Processing…' : 'Confirm Payment'}
             </Text>
           </Pressable>
 
           <Pressable
             onPress={() => navigation.goBack()}
-            disabled={initiation.isPending}
+            disabled={saleMutation.isPending}
             className="mt-4 min-h-[52px] items-center justify-center rounded-xl border border-brand-dark bg-white disabled:opacity-50"
           >
             <Text className="text-[17px] font-semibold text-brand-dark">Cancel</Text>

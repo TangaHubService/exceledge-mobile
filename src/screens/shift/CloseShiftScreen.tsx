@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -78,8 +78,16 @@ export default function CloseShiftScreen() {
   return (
     <SafeAreaView className="flex-1 bg-brand-darker" edges={['top']}>
       <ReferenceHeader title="Shift Summary" onBack={() => navigation.goBack()} />
-      <View className="flex-1 bg-[#F8F9F8] p-4">
-        <View className="rounded-xl border border-gray-100 bg-white px-5 py-7" style={{ shadowColor: '#0B241A', shadowOpacity: 0.04, shadowRadius: 8, elevation: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        className="flex-1 bg-[#F8F9F8]"
+      >
+        <ScrollView
+          contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="rounded-xl border border-gray-100 bg-white px-5 py-7" style={{ shadowColor: '#0B241A', shadowOpacity: 0.04, shadowRadius: 8, elevation: 1 }}>
           {loading ? (
             <Text className="py-20 text-center text-[14px] text-gray-600">Loading shift summary…</Text>
           ) : error ? (
@@ -109,7 +117,8 @@ export default function CloseShiftScreen() {
             </>
           )}
         </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
       <ReferenceBottomBar active="Home" onNavigate={goTab} />
     </SafeAreaView>
   );
