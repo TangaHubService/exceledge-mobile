@@ -63,6 +63,7 @@ export default function OpenShiftScreen() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchId, setBranchId] = useState<number | null>(null);
   const [floatText, setFloatText] = useState('100,000');
+  const [mobileFloatText, setMobileFloatText] = useState('0');
   const [branchModal, setBranchModal] = useState(false);
 
   const organization = organizations.find((o) => o.id === activeOrganizationId);
@@ -126,10 +127,11 @@ export default function OpenShiftScreen() {
     }
 
     const openingFloat = Math.max(0, Number(floatText.replace(/,/g, '')) || 0);
+    const openingMobileMoney = Math.max(0, Number(mobileFloatText.replace(/,/g, '')) || 0);
     setOpening(true);
     setError(null);
     try {
-      const shift = await openShift({ openingFloat, branchId });
+      const shift = await openShift({ openingFloat, openingMobileMoney, branchId });
       await setActiveBranch(branchId);
       setActiveShift(shift);
       navigation.replace('AppTabs');
@@ -143,6 +145,11 @@ export default function OpenShiftScreen() {
   const updateOpeningCash = (value: string) => {
     const digits = value.replace(/\D/g, '');
     setFloatText(digits ? Number(digits).toLocaleString('en-US') : '');
+  };
+
+  const updateOpeningMobileMoney = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    setMobileFloatText(digits ? Number(digits).toLocaleString('en-US') : '');
   };
 
   return (
@@ -199,6 +206,18 @@ export default function OpenShiftScreen() {
               <TextInput
                 value={floatText}
                 onChangeText={updateOpeningCash}
+                keyboardType="number-pad"
+                placeholder="0"
+                placeholderTextColor={colors.text.muted}
+                className="min-h-[52px] rounded-lg border border-border bg-white px-4 text-[17px] font-bold text-gray-950"
+              />
+            </View>
+
+            <View className="mb-5">
+              <Text className="mb-1.5 ml-3 text-[14px] text-gray-700">Opening Mobile Money (RWF)</Text>
+              <TextInput
+                value={mobileFloatText}
+                onChangeText={updateOpeningMobileMoney}
                 keyboardType="number-pad"
                 placeholder="0"
                 placeholderTextColor={colors.text.muted}

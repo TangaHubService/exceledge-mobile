@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
 import { getOrgSettings, updateOrgSettings, DEFAULT_ENABLED_PAYMENT_METHODS } from '../../api/orgSettings';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -34,10 +35,10 @@ export default function PaymentMethodsScreen() {
       updateOrgSettings({ preferences: { enabledPaymentMethods: methods } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['org-settings'] });
-      Alert.alert('Saved', 'Payment methods updated for this organization.');
+      toast.success('Saved', 'Payment methods updated for this organization.');
     },
     onError: (error: any) => {
-      Alert.alert('Could not save', error?.response?.data?.error ?? error?.message ?? 'Please try again.');
+      toast.error('Could not save', error?.response?.data?.error ?? error?.message ?? 'Please try again.');
     },
   });
 

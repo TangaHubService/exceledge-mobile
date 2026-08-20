@@ -15,6 +15,7 @@ import { getEbmOutbox, getEbmStatus } from '../../api/ebm';
 import { API_URL } from '../../api/client';
 import { useIsOffline } from '../../components/OfflineBanner';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -63,7 +64,7 @@ export default function AboutScreen() {
 
   const contactSupport = useCallback(async () => {
     if (!(await MailComposer.isAvailableAsync())) {
-      Alert.alert('Email not available', 'No mail app is configured on this device. Please contact your organization support contact.');
+      toast.error('Email not available', 'No mail app is configured on this device. Please contact your organization support contact.');
       return;
     }
     await MailComposer.composeAsync({

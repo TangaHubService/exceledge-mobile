@@ -5,7 +5,6 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  Alert,
   TextInput,
   Modal,
   Image,
@@ -19,6 +18,7 @@ import type { RootStackParamList } from '../../navigation/RootNavigator';
 import { cancelSale, getEbmReceipt, getSaleById, reprintSaleReceipt } from '../../api/sales';
 import { API_URL } from '../../api/client';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'SaleDetail'>;
@@ -96,7 +96,7 @@ export default function SaleDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ['sale', saleId] });
       saleQuery.refetch();
     },
-    onError: (error: any) => Alert.alert('Cancel failed', error?.response?.data?.error ?? error?.message ?? 'Please try again.'),
+    onError: (error: any) => toast.error('Cancel failed', error?.response?.data?.error ?? error?.message ?? 'Please try again.'),
   });
   const reprintMutation = useMutation({
     mutationFn: () => reprintSaleReceipt(saleId),
@@ -109,7 +109,7 @@ export default function SaleDetailScreen() {
         totalAmount: updatedSale.totalAmount,
       });
     },
-    onError: (error: any) => Alert.alert('Reprint failed', error?.response?.data?.error ?? error?.message ?? 'Please try again.'),
+    onError: (error: any) => toast.error('Reprint failed', error?.response?.data?.error ?? error?.message ?? 'Please try again.'),
   });
 
   const sale = saleQuery.data;
@@ -132,7 +132,7 @@ export default function SaleDetailScreen() {
 
   const confirmCancel = () => {
     if (reason.trim().length < 5) {
-      Alert.alert('Reason required', 'Enter at least five characters explaining the cancellation.');
+      toast.warning('Reason required', 'Enter at least five characters explaining the cancellation.');
       return;
     }
     cancelMutation.mutate();

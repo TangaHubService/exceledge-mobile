@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import type { RootStackParamList } from '../../navigation/RootNavigator';
 import { usePrinterStore } from '../../store/printerStore';
 import { useAuthStore } from '../../store/authStore';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -39,7 +40,7 @@ export default function PrinterSettingsScreen() {
 </body></html>`,
       });
     } catch (error: any) {
-      Alert.alert('Print failed', error?.message ?? 'Could not open the print dialog.');
+      toast.error('Print failed', error?.message ?? 'Could not open the print dialog.');
     } finally {
       setPrinting(false);
     }

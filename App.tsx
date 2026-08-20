@@ -13,6 +13,8 @@ import { useAuthStore } from './src/store/authStore';
 import { usePrinterStore } from './src/store/printerStore';
 import { useSecurityStore } from './src/store/securityStore';
 import { colors } from './src/theme';
+import { toastConfig } from './src/utils/toast';
+import Toast from 'react-native-toast-message';
 
 const queryClient = new QueryClient();
 
@@ -66,6 +68,7 @@ export default function App() {
             {accessToken && securityLocked ? <PinLockScreen /> : <RootNavigator />}
             <StatusBar style="light" />
           </NavigationContainer>
+          <Toast config={toastConfig} />
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

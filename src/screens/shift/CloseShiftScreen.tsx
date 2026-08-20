@@ -7,6 +7,7 @@ import type { RootStackParamList } from '../../navigation/RootNavigator';
 import { closeShift, getShiftSummary, type ShiftSummary } from '../../api/shifts';
 import { useShiftStore } from '../../store/shiftStore';
 import { ReferenceBottomBar, ReferenceHeader, type ReferenceTab } from '../../components/ReferenceChrome';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -51,18 +52,23 @@ export default function CloseShiftScreen() {
 
   const handleClose = () => {
     if (!activeShift || !summary) return;
-    if (!hasActual || actualValue < 0) { Alert.alert('Actual cash required', 'Count the till and enter the actual cash amount.'); return; }
+    if (!hasActual || actualValue < 0) { toast.warning('Actual cash required', 'Count the till and enter the actual cash amount.'); return; }
     Alert.alert('Close shift?', `The recorded difference is ${money(difference ?? 0)}. Closing a shift cannot be undone.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Close Shift', style: 'destructive', onPress: async () => {
           setSubmitting(true);
           try {
-            await closeShift(activeShift.id, { actualCash: actualValue });
+            const result = await closeShift(activeShift.id, { actualCash: actualValue });
             setActiveShift(null);
-            navigation.reset({ index: 0, routes: [{ name: 'OpenShift' }] });
+            if (result.needsApproval || result.shift.status === 'PENDING_APPROVAL') {
+              navigation.reset({ index: 0, routes: [{ name: 'AppTabs', params: { screen: 'Home' } }] });
+              setTimeout(() => toast.success('Submitted for approval', 'Your shift closing was submitted. A manager will approve or reject it before it is finalised.'), 300);
+            } else {
+              navigation.reset({ index: 0, routes: [{ name: 'OpenShift' }] });
+            }
           } catch (requestError: any) {
-            Alert.alert('Could not close shift', requestError?.response?.data?.error ?? requestError?.message ?? 'Please try again.');
+            toast.error('Could not close shift', requestError?.response?.data?.error ?? requestError?.message ?? 'Please try again.');
           } finally { setSubmitting(false); }
         },
       },
@@ -83,6 +89,7 @@ export default function CloseShiftScreen() {
           ) : (
             <>
               <Row label="Opening Cash" value={money(summary.openingFloat)} />
+              {summary.openingMobileMoney ? <Row label="Opening Mobile Money" value={money(summary.openingMobileMoney)} /> : null}
               <Row label="Cash Sales" value={money(summary.cashSales)} />
               <Row label="Mobile Money" value={money(summary.mobileMoneySales)} />
               {summary.cardSales ? <Row label="Bank Card" value={money(summary.cardSales)} /> : null}
@@ -91,6 +98,7 @@ export default function CloseShiftScreen() {
               <Row label="Total Sales" value={money(netSales)} tone="green" bold />
               <View className="my-2 border-t border-gray-200" />
               <Row label="Expected Cash" value={money(summary.expectedCash)} tone="green" />
+              <Row label="Expected Mobile Money" value={money(summary.expectedMobileMoney ?? 0)} tone="green" />
               <Row label="Actual Cash">
                 <View className="h-11 min-w-[150px] justify-center rounded-lg border border-gray-300 px-3">
                   <TextInput value={actualCash} onChangeText={setActualCash} keyboardType="decimal-pad" placeholder="Enter amount" placeholderTextColor="#8A93A2" className="text-right text-[16px] font-semibold text-green-700" />

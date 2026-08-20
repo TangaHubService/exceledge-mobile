@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import { API_URL } from '../../api/client';
 import { usePrinterStore } from '../../store/printerStore';
 import { useIsOffline } from '../../components/OfflineBanner';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'SaleSuccess'>;
@@ -78,7 +79,7 @@ export default function SaleSuccessScreen() {
           await Print.printAsync({ html });
         }
       } catch (error: any) {
-        Alert.alert('Auto-print failed', error?.message ?? 'The receipt could not be printed.');
+        toast.warning('Auto-print failed', error?.message ?? 'The receipt could not be printed.');
       }
     })();
     autoPrinted.current = true;

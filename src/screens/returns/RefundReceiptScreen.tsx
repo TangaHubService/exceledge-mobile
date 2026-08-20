@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { getSaleById } from '../../api/sales';
 import { useAuthStore } from '../../store/authStore';
 import { ReferenceBottomBar, ReferenceHeader, type ReferenceTab } from '../../components/ReferenceChrome';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'RefundReceipt'>;
@@ -53,7 +54,7 @@ export default function RefundReceiptScreen() {
 
   const print = async () => {
     try { await Print.printAsync({ html }); }
-    catch (error: any) { Alert.alert('Print failed', error?.message ?? 'Could not open the print dialog.'); }
+    catch (error: any) { toast.error('Print failed', error?.message ?? 'Could not open the print dialog.'); }
   };
   const share = async () => {
     try {
@@ -67,7 +68,7 @@ export default function RefundReceiptScreen() {
         UTI: 'com.adobe.pdf',
         dialogTitle: `Save or share ${receiptNumber}.pdf`,
       });
-    } catch (error: any) { Alert.alert('Share failed', error?.message ?? 'Could not share this receipt.'); }
+    } catch (error: any) { toast.error('Share failed', error?.message ?? 'Could not share this receipt.'); }
   };
 
   useEffect(() => {

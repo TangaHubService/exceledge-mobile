@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import type { RootStackParamList } from '../../navigation/RootNavigator';
 import { getSaleById, refundSale } from '../../api/sales';
 import { ReferenceBottomBar, ReferenceHeader, type ReferenceTab } from '../../components/ReferenceChrome';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'CustomerRefund'>;
@@ -39,7 +40,7 @@ export default function CustomerRefundScreen() {
         totalAmount: Math.abs(result.refundAmount),
       });
     },
-    onError: (error: any) => Alert.alert('Refund failed', error?.response?.data?.error ?? error?.message ?? 'Please try again.'),
+    onError: (error: any) => toast.error('Refund failed', error?.response?.data?.error ?? error?.message ?? 'Please try again.'),
   });
   const goTab = (tab: ReferenceTab) => navigation.navigate('AppTabs', { screen: tab });
 
@@ -59,7 +60,7 @@ export default function CustomerRefundScreen() {
                 <Text className="text-[23px] font-extrabold text-green-600">{money(amount)}</Text>
               </View>
               <Text className="text-[17px] font-extrabold text-gray-950">Refund Method</Text>
-              <Pressable onPress={() => Alert.alert('Refund Method', 'Cash is the refund settlement method supported by the current backend.')} className="mt-3 h-[54px] flex-row items-center rounded-xl border border-gray-300 px-4">
+              <Pressable onPress={() => toast.info('Refund Method', 'Cash is the refund settlement method supported by the current backend.')} className="mt-3 h-[54px] flex-row items-center rounded-xl border border-gray-300 px-4">
                 <Text className="flex-1 text-[17px] text-[#424957]">Cash</Text>
                 <Ionicons name="chevron-down" size={23} color="#111827" />
               </Pressable>

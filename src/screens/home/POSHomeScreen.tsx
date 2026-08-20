@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput, Modal, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -11,7 +12,7 @@ import type { RootStackParamList } from '../../navigation/RootNavigator';
 import type { AppTabParamList } from '../../navigation/AppTabs';
 import { useAuthStore } from '../../store/authStore';
 import { getDashboardNotifications, getDashboardOverview } from '../../api/dashboard';
-import type { DashboardPreset } from '../../api/dashboard';
+import type { DashboardPreset, DashboardNotification } from '../../api/dashboard';
 import { colors } from '../../theme';
 
 type Nav = CompositeNavigationProp<
@@ -25,6 +26,12 @@ const PERIODS: { key: DashboardPreset; label: string }[] = [
   { key: 'this_month', label: 'This Month' },
   { key: 'this_year', label: 'This Year' },
 ];
+
+const NOTIFICATIONS_READ_KEY = 'exceledge_notifications_read';
+
+function notificationKey(notification: DashboardNotification): string {
+  return `${notification.type}|${notification.title}|${notification.time}`;
+}
 
 function formatNumber(value: number, currency?: string): string {
   const formatted = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(value || 0));
@@ -74,6 +81,26 @@ export default function POSHomeScreen() {
   const [periodOpen, setPeriodOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [readKeys, setReadKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    AsyncStorage.getItem(NOTIFICATIONS_READ_KEY)
+      .then((raw) => {
+        if (raw) setReadKeys(new Set(JSON.parse(raw) as string[]));
+      })
+      .catch(() => {});
+  }, []);
+
+  const markRead = useCallback((notification: DashboardNotification) => {
+    const key = notificationKey(notification);
+    setReadKeys((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      AsyncStorage.setItem(NOTIFICATIONS_READ_KEY, JSON.stringify([...next])).catch(() => {});
+      return next;
+    });
+  }, []);
 
   const overviewQuery = useQuery({
     queryKey: ['dashboard-overview', period, activeBranchId],
@@ -93,6 +120,15 @@ export default function POSHomeScreen() {
     totalCustomers: data?.summary?.totalCustomers ?? { value: 0, newCount: 0 },
   };
   const notifications = notificationsQuery.data ?? [];
+  const unreadNotifications = useMemo(
+    () => notifications.filter((notification) => !readKeys.has(notificationKey(notification))),
+    [notifications, readKeys],
+  );
+  const openNotification = useCallback((notification: DashboardNotification) => {
+    markRead(notification);
+    setNotificationsOpen(false);
+    navigation.navigate('Products');
+  }, [markRead, navigation]);
   const firstName = user?.name?.trim().split(/\s+/)[0] || 'User';
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
   const periodLabel = PERIODS.find((item) => item.key === period)?.label ?? 'This Month';
@@ -120,9 +156,9 @@ export default function POSHomeScreen() {
           </View>
           <Pressable onPress={() => setNotificationsOpen(true)} className="mr-4 h-11 w-11 items-center justify-center">
             <Ionicons name="notifications-outline" size={27} color="#fff" />
-            {notifications.length > 0 ? (
+            {unreadNotifications.length > 0 ? (
               <View className="absolute right-0 top-0 min-w-[19px] items-center rounded-full bg-red-500 px-1 py-0.5">
-                <Text className="text-[10px] font-bold text-white">{Math.min(notifications.length, 99)}</Text>
+                <Text className="text-[10px] font-bold text-white">{Math.min(unreadNotifications.length, 99)}</Text>
               </View>
             ) : null}
           </Pressable>
@@ -281,12 +317,26 @@ export default function POSHomeScreen() {
             <ScrollView showsVerticalScrollIndicator={false}>
               {notifications.length === 0 ? (
                 <Text className="py-10 text-center text-[14px] text-gray-500">No inventory alerts</Text>
-              ) : notifications.map((notification, index) => (
-                <View key={`${notification.title}-${index}`} className="border-b border-gray-100 py-4">
-                  <Text className="text-[14px] font-semibold text-gray-950">{notification.title}</Text>
-                  <Text className="mt-1 text-[12px] leading-5 text-gray-600">{notification.message}</Text>
-                </View>
-              ))}
+              ) : notifications.map((notification, index) => {
+                const read = readKeys.has(notificationKey(notification));
+                return (
+                  <Pressable
+                    key={`${notification.title}-${index}`}
+                    onPress={() => openNotification(notification)}
+                    className={`border-b border-gray-100 py-4 ${read ? 'opacity-55' : ''}`}
+                  >
+                    <View className="flex-row items-start">
+                      <View className="flex-1 pr-2">
+                        <Text className="text-[14px] font-semibold text-gray-950">{notification.title}</Text>
+                        <Text className="mt-1 text-[12px] leading-5 text-gray-600">{notification.message}</Text>
+                      </View>
+                      {!read ? (
+                        <View className="mt-1.5 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colors.brand.DEFAULT }} />
+                      ) : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           </Pressable>
         </Pressable>

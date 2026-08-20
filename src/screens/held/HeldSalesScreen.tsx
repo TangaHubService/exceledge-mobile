@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { ReferenceBottomBar, ReferenceHeader, type ReferenceTab } from '../../components/ReferenceChrome';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Filter = 'ALL' | 'MINE' | 'OTHERS';
@@ -59,12 +60,12 @@ export default function HeldSalesScreen() {
       queryClient.invalidateQueries({ queryKey: ['heldSales'] });
       navigation.navigate('Cart');
     },
-    onError: (error: any) => Alert.alert('Could not continue', error?.response?.data?.error ?? error?.message ?? 'Please try again.'),
+    onError: (error: any) => toast.error('Could not continue', error?.response?.data?.error ?? error?.message ?? 'Please try again.'),
   });
   const cancelMutation = useMutation({
     mutationFn: cancelHeldSale,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['heldSales'] }),
-    onError: (error: any) => Alert.alert('Could not delete', error?.response?.data?.error ?? error?.message ?? 'Please try again.'),
+    onError: (error: any) => toast.error('Could not delete', error?.response?.data?.error ?? error?.message ?? 'Please try again.'),
   });
 
   const rows = useMemo(() => {

@@ -70,6 +70,7 @@ export default function PaymentProcessingScreen() {
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          itemType: item.itemType,
         })),
         paymentType: 'MOBILE_MONEY',
         cashAmount: amount,

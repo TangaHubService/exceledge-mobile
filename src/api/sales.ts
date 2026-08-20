@@ -82,7 +82,7 @@ export interface SplitPayment {
 
 export interface CreateSaleInput {
   customerId: number;
-  items: Array<{ productId: number; quantity: number; unitPrice: number }>;
+  items: Array<{ productId: number; quantity: number; unitPrice: number; itemType?: 'PRODUCT' | 'SERVICE' }>;
   paymentType: 'CASH' | 'DEBT' | 'INSURANCE' | 'MIXED' | 'MOBILE_MONEY' | 'CREDIT_CARD';
   cashAmount: number;
   debtAmount: number;

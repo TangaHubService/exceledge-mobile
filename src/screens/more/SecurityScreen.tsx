@@ -7,6 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
 import { useSecurityStore, AUTO_LOCK_OPTIONS } from '../../store/securityStore';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -37,20 +38,20 @@ export default function SecurityScreen() {
 
   const savePin = async () => {
     if (pin.length < 4 || confirm.length < 4) {
-      Alert.alert('Incomplete PIN', 'Enter a 4-digit PIN in both fields.');
+      toast.warning('Incomplete PIN', 'Enter a 4-digit PIN in both fields.');
       return;
     }
     if (pin !== confirm) {
-      Alert.alert('PINs do not match', 'Please re-enter the same PIN in both fields.');
+      toast.warning('PINs do not match', 'Please re-enter the same PIN in both fields.');
       return;
     }
     setSaving(true);
     try {
       await setPin(pin);
       setPinModal(false);
-      Alert.alert(hasPin ? 'PIN updated' : 'PIN set', 'Your PIN has been saved.');
+      toast.success(hasPin ? 'PIN updated' : 'PIN set', 'Your PIN has been saved.');
     } catch (error: any) {
-      Alert.alert('Could not save PIN', error?.message ?? 'Please try again.');
+      toast.error('Could not save PIN', error?.message ?? 'Please try again.');
     } finally {
       setSaving(false);
     }

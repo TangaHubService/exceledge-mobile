@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import NetInfo from '@react-native-community/netinfo';
@@ -11,6 +11,7 @@ import { getEbmOutbox, getEbmStatus } from '../../api/ebm';
 import { useIsOffline } from '../../components/OfflineBanner';
 import { ReferenceBottomBar, ReferenceHeader, type ReferenceTab } from '../../components/ReferenceChrome';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -30,7 +31,7 @@ export default function OfflineModeScreen() {
     try {
       const network = await NetInfo.fetch();
       if (network.isConnected === false || network.isInternetReachable === false) {
-        Alert.alert('Still offline', 'Reconnect this device to the internet, then try again.');
+        toast.error('Still offline', 'Reconnect this device to the internet, then try again.');
         return;
       }
       await Promise.all([ebmQuery.refetch(), outboxQuery.refetch()]);

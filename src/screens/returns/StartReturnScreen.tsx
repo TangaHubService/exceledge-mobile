@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { getSales } from '../../api/sales';
 import { useAuthStore } from '../../store/authStore';
 import { ReferenceBottomBar, ReferenceHeader, type ReferenceTab } from '../../components/ReferenceChrome';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type DateFilter = 'ALL' | 'TODAY' | 'YESTERDAY' | 'WEEK' | 'MONTH';
@@ -75,7 +76,7 @@ export default function StartReturnScreen() {
                 <Text className="mt-1 text-[13px] leading-5 text-gray-600">Return items sold to customers</Text>
               </View>
               <Pressable
-                onPress={() => Alert.alert('Purchase returns', 'Purchase returns are not available in the current backend. Use the web purchase workflow for supplier returns.')}
+                onPress={() => toast.info('Purchase returns', 'Purchase returns are not available in the current backend. Use the web purchase workflow for supplier returns.')}
                 className="min-h-[142px] flex-1 rounded-xl border border-gray-200 bg-white p-4"
               >
                 <View className="flex-row justify-between">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import { getInvoice } from '../../api/sales';
 import { API_URL } from '../../api/client';
 import { ReferenceBottomBar, ReferenceHeader, type ReferenceTab } from '../../components/ReferenceChrome';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'PrintShare'>;
@@ -72,7 +73,7 @@ export default function PrintShareScreen() {
 
   const requireInvoiceHtml = () => {
     if (html) return html;
-    Alert.alert(
+    toast.warning(
       invoiceQuery.isLoading ? 'Preparing invoice' : 'Invoice unavailable',
       invoiceQuery.isLoading
         ? 'The invoice is still loading. Please try again in a moment.'
@@ -86,7 +87,7 @@ export default function PrintShareScreen() {
     if (!invoiceHtml) return;
     setIsPreparing(true);
     try { await Print.printAsync({ html: invoiceHtml }); }
-    catch (error: any) { Alert.alert('Print failed', error?.message ?? 'Could not open the print dialog.'); }
+    catch (error: any) { toast.error('Print failed', error?.message ?? 'Could not open the print dialog.'); }
     finally { setIsPreparing(false); }
   };
   const createPdf = async () => {
@@ -131,7 +132,7 @@ export default function PrintShareScreen() {
         await sharePdf(pdfUri);
       }
     } catch (error: any) {
-      Alert.alert('Sharing failed', error?.message ?? 'Please try again.');
+      toast.error('Sharing failed', error?.message ?? 'Please try again.');
     } finally {
       setIsPreparing(false);
     }

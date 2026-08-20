@@ -1,4 +1,4 @@
-import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { getSaleById } from '../../api/sales';
 import { API_URL } from '../../api/client';
 import { ReferenceBottomBar, ReferenceHeader, type ReferenceTab } from '../../components/ReferenceChrome';
 import { colors } from '../../theme';
+import { toast } from '../../utils/toast';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'SelectReturnItems'>;
@@ -47,7 +48,7 @@ export default function SelectReturnItemsScreen() {
   const tax = Number(sale.vatAmount ?? items.reduce((sum, item) => sum + Number(item.taxAmount ?? 0), 0));
   const subtotal = Number(sale.taxableAmount ?? Math.max(0, total - tax));
   const invoice = sale.invoiceNumber ?? sale.saleNumber;
-  const locked = () => Alert.alert('Full invoice return', 'The backend currently requires all items and their full sold quantities to be returned together.');
+  const locked = () => toast.info('Full invoice return', 'The backend currently requires all items and their full sold quantities to be returned together.');
 
   const productCell = (item: (typeof items)[number]) => {
     const uri = imageUri(item.product?.imageUrl);
