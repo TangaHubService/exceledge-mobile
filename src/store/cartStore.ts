@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { HeldSaleItem } from '../api/heldSales';
 import type { Customer } from '../api/customers';
+import type { SaleItem } from '../api/sales';
 
 export interface CartItem {
   key: string;
@@ -22,6 +23,8 @@ interface CartState {
   paymentType: PaymentType;
   cashAmount: number;
   notes: string;
+  /** Set when the cart was seeded from a proforma; checkout converts it instead of creating a new sale. */
+  originProformaId: number | null;
   add: (item: Omit<CartItem, 'key' | 'quantity' | 'discount'>, allowNegativeStock?: boolean) => void;
   increment: (key: string, allowNegativeStock?: boolean) => void;
   decrement: (key: string) => void;
@@ -33,6 +36,7 @@ interface CartState {
   setCashAmount: (n: number) => void;
   setNotes: (n: string) => void;
   restoreFromHeld: (items: HeldSaleItem[], customer: Customer | null) => void;
+  restoreFromProforma: (items: SaleItem[], customer: Customer | null, proformaId: number) => void;
 }
 
 const makeKey = (productId: number) => `p-${productId}`;
@@ -43,6 +47,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   paymentType: 'CASH',
   cashAmount: 0,
   notes: '',
+  originProformaId: null,
 
   add: (item, allowNegativeStock = false) => {
     const key = makeKey(item.productId);
@@ -103,7 +108,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     set((s) => ({ ...s, items: s.items.filter((i) => i.key !== key) }));
   },
 
-  clear: () => set({ items: [], customer: null, paymentType: 'CASH', cashAmount: 0, notes: '' }),
+  clear: () => set({ items: [], customer: null, paymentType: 'CASH', cashAmount: 0, notes: '', originProformaId: null }),
 
   setCustomer: (customer) => set({ customer }),
   setPaymentType: (paymentType) => set({ paymentType }),
@@ -122,7 +127,22 @@ export const useCartStore = create<CartState>((set, get) => ({
       stock: i.stock,
       imageUrl: i.imageUrl,
     }));
-    set({ items: restored, customer });
+    set({ items: restored, customer, originProformaId: null });
+  },
+
+  restoreFromProforma: (items, customer, proformaId) => {
+    const restored: CartItem[] = items.map((i) => ({
+      key: i.productId ? makeKey(i.productId) : `svc-${i.id}`,
+      productId: i.productId ?? 0,
+      name: i.serviceName || i.product?.name || 'Item',
+      unitPrice: Number(i.unitPrice),
+      quantity: Number(i.quantity),
+      discount: Number(i.discount ?? 0),
+      itemType: i.itemType ?? (i.productId ? 'PRODUCT' : 'SERVICE'),
+      stock: i.product?.quantity,
+      imageUrl: i.product?.imageUrl,
+    }));
+    set({ items: restored, customer, originProformaId: proformaId });
   },
 }));
 

@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import { useAuthStore } from '../store/authStore';
+import { File, Paths } from 'expo-file-system';
 import type { Product } from './products';
 
 export interface SaleItem {
@@ -42,7 +43,7 @@ export interface SalePayment {
   } | null;
 }
 
-export type SaleStatus = 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
+export type SaleStatus = 'COMPLETED' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'CONVERTED';
 
 export interface Sale {
   id: number;
@@ -64,6 +65,10 @@ export interface Sale {
   salePayments?: SalePayment[];
   reprintCount?: number;
   rcptLabel?: string | null;
+  isProforma?: boolean;
+  proformaSourceId?: number | null;
+  convertedSale?: { id: number; invoiceNumber?: string | null; saleNumber?: string | null } | null;
+  proformaSource?: { id: number; invoiceNumber?: string | null } | null;
   originalSaleId?: number | null;
   originalSale?: {
     id: number;
@@ -108,6 +113,32 @@ function orgId(): number {
 
 export async function createSale(input: CreateSaleInput): Promise<Sale> {
   const { data } = await apiClient.post(`/sales/${orgId()}`, input);
+  return data?.data ?? data;
+}
+
+export interface ConvertProformaInput {
+  items?: Array<{ productId?: number; quantity: number; unitPrice: number; itemType?: 'PRODUCT' | 'SERVICE'; serviceName?: string }>;
+  paymentType: CreateSaleInput['paymentType'];
+  cashAmount: number;
+  debtAmount: number;
+  insuranceAmount: number;
+  shiftId?: number;
+  payments?: SplitPayment[];
+  customerId?: number;
+}
+
+/** Convert a proforma into a real, fiscalized NS sale. */
+export async function convertProforma(id: number, input: ConvertProformaInput): Promise<Sale> {
+  const { data } = await apiClient.post(`/sales/${orgId()}/${id}/convert`, input);
+  return data?.data ?? data;
+}
+
+/** Replace a proforma's line items before it is converted. */
+export async function updateProforma(
+  id: number,
+  input: { customerId?: number; items: Array<{ productId?: number; quantity: number; unitPrice: number; itemType?: 'PRODUCT' | 'SERVICE'; serviceName?: string }> },
+): Promise<Sale> {
+  const { data } = await apiClient.put(`/sales/${orgId()}/${id}/proforma`, input);
   return data?.data ?? data;
 }
 
@@ -218,13 +249,26 @@ export interface CanonicalInvoice {
   renderedHtml?: string | null;
 }
 
-/**
- * Fetch the same fully composed invoice document used by the web app. Mobile
- * printing and sharing must use `renderedHtml` instead of rebuilding a receipt.
- */
+/** Fetch invoice metadata/status; print and share use getInvoicePdfFile(). */
 export async function getInvoice(saleId: number): Promise<CanonicalInvoice> {
   const { data } = await apiClient.get(`/sales/${orgId()}/invoices/${saleId}`);
   return data?.data ?? data;
+}
+
+/** Download the authoritative backend-generated PDF into the Expo cache. */
+export async function getInvoicePdfFile(saleId: number, invoiceNumber: string): Promise<File> {
+  const response = await apiClient.get<ArrayBuffer>(`/sales/${orgId()}/invoices/${saleId}/pdf`, {
+    responseType: 'arraybuffer',
+    headers: { Accept: 'application/pdf' },
+  });
+  const bytes = new Uint8Array(response.data);
+  if (bytes.length < 1_000) throw new Error('The server returned an invalid invoice PDF.');
+
+  const safeNumber = String(invoiceNumber || saleId).replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || String(saleId);
+  const file = new File(Paths.cache, `EBM-Invoice-${safeNumber}.pdf`);
+  file.create({ overwrite: true, intermediates: true });
+  file.write(bytes);
+  return file;
 }
 
 export async function getEbmReceipt(saleId: number): Promise<{ status: 'success' | 'pending'; ebm?: EbmReceiptData }> {
