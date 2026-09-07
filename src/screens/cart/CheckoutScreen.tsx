@@ -9,7 +9,7 @@ import type { RootStackParamList } from '../../navigation/RootNavigator';
 import { useCartStore, selectCartSubtotal } from '../../store/cartStore';
 import { useShiftStore } from '../../store/shiftStore';
 import { useAuthStore } from '../../store/authStore';
-import { createSale } from '../../api/sales';
+import { createSale, convertProforma } from '../../api/sales';
 import type { SplitPayment } from '../../api/sales';
 import { getOrgSettings } from '../../api/orgSettings';
 import { useIsOffline } from '../../components/OfflineBanner';
@@ -39,6 +39,7 @@ export default function CheckoutScreen() {
   const items = useCartStore((state) => state.items);
   const customer = useCartStore((state) => state.customer);
   const clear = useCartStore((state) => state.clear);
+  const originProformaId = useCartStore((state) => state.originProformaId);
   const activeShift = useShiftStore((state) => state.activeShift);
   const activeBranchId = useAuthStore((state) => state.activeBranchId);
   const isOffline = useIsOffline();
@@ -106,15 +107,27 @@ export default function CheckoutScreen() {
   }, [method, mixedCashValue, subtotal]);
 
   const saleMutation = useMutation({
-    mutationFn: () =>
-      createSale({
+    mutationFn: () => {
+      const mappedItems = items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        itemType: item.itemType,
+      }));
+      if (originProformaId) {
+        return convertProforma(originProformaId, {
+          items: mappedItems,
+          paymentType,
+          cashAmount,
+          debtAmount,
+          insuranceAmount: 0,
+          shiftId: activeShift?.id ?? undefined,
+          payments,
+        });
+      }
+      return createSale({
         customerId: customer!.id,
-        items: items.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          itemType: item.itemType,
-        })),
+        items: mappedItems,
         paymentType,
         cashAmount,
         debtAmount,
@@ -122,7 +135,8 @@ export default function CheckoutScreen() {
         shiftId: activeShift?.id ?? undefined,
         branchId: activeBranchId,
         payments,
-      }),
+      });
+    },
     onSuccess: (sale) => {
       clear();
       queryClient.invalidateQueries({ queryKey: ['products'] });

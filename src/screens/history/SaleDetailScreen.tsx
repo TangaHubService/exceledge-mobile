@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
 import { cancelSale, getEbmReceipt, getSaleById, reprintSaleReceipt } from '../../api/sales';
+import { useCartStore } from '../../store/cartStore';
 import { API_URL } from '../../api/client';
 import { colors } from '../../theme';
 import { toast } from '../../utils/toast';
@@ -74,6 +75,7 @@ export default function SaleDetailScreen() {
   const { saleId } = route.params;
   const [menuOpen, setMenuOpen] = useState(false);
   const [ebmOpen, setEbmOpen] = useState(false);
+  const restoreFromProforma = useCartStore((s) => s.restoreFromProforma);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState('');
 
@@ -278,11 +280,26 @@ export default function SaleDetailScreen() {
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable className="flex-1 items-end bg-black/20 px-5 pt-24" onPress={() => setMenuOpen(false)}>
           <Pressable className="w-52 rounded-xl bg-white p-2" onPress={(event) => event.stopPropagation()}>
-            <Pressable onPress={() => { setMenuOpen(false); navigation.navigate('SelectReturnItems', { saleId }); }} className="flex-row items-center rounded-lg px-3 py-3">
-              <Ionicons name="return-down-back-outline" size={20} color={colors.brand.dark} />
-              <Text className="ml-3 text-[14px] font-medium text-gray-950">Return / Refund</Text>
-            </Pressable>
-            {sale.status === 'COMPLETED' ? (
+            {sale.isProforma && sale.status !== 'CONVERTED' && !sale.convertedSale ? (
+              <Pressable
+                onPress={() => {
+                  setMenuOpen(false);
+                  restoreFromProforma(sale.saleItems ?? [], (sale.customer as any) ?? null, saleId);
+                  navigation.navigate('Cart');
+                }}
+                className="flex-row items-center rounded-lg px-3 py-3"
+              >
+                <Ionicons name="cart-outline" size={20} color={colors.brand.dark} />
+                <Text className="ml-3 text-[14px] font-medium text-gray-950">Convert to sale</Text>
+              </Pressable>
+            ) : null}
+            {!sale.isProforma ? (
+              <Pressable onPress={() => { setMenuOpen(false); navigation.navigate('SelectReturnItems', { saleId }); }} className="flex-row items-center rounded-lg px-3 py-3">
+                <Ionicons name="return-down-back-outline" size={20} color={colors.brand.dark} />
+                <Text className="ml-3 text-[14px] font-medium text-gray-950">Return / Refund</Text>
+              </Pressable>
+            ) : null}
+            {sale.status === 'COMPLETED' && !sale.isProforma ? (
               <Pressable onPress={() => { setMenuOpen(false); setCancelOpen(true); }} className="flex-row items-center rounded-lg px-3 py-3">
                 <Ionicons name="close-circle-outline" size={20} color={colors.danger} />
                 <Text className="ml-3 text-[14px] font-medium text-red-600">Cancel sale</Text>
