@@ -229,6 +229,9 @@ export interface InvoiceDetails {
   invoiceDate: string;
   status: string;
   currency: string;
+  /** Set when the sale is a real NS/NR sale VSDC has not confirmed yet — the
+   * document is composed anyway and stamped NOT FISCALISED. */
+  notFiscalized?: 'pending' | 'failed' | null;
 }
 
 export interface InvoiceTotals {
@@ -249,9 +252,12 @@ export interface CanonicalInvoice {
   renderedHtml?: string | null;
 }
 
-/** Fetch invoice metadata/status; print and share use getInvoicePdfFile(). */
+/** Fetch invoice metadata/status; print and share use getInvoicePdfFile().
+ * Passes allowPending=1 so a real sale VSDC has not confirmed (still syncing, or
+ * failed) returns the composed document stamped NOT FISCALISED instead of 425 —
+ * otherwise the print/share screen can never load and the PDF stays unreachable. */
 export async function getInvoice(saleId: number): Promise<CanonicalInvoice> {
-  const { data } = await apiClient.get(`/sales/${orgId()}/invoices/${saleId}`);
+  const { data } = await apiClient.get(`/sales/${orgId()}/invoices/${saleId}?allowPending=1`);
   return data?.data ?? data;
 }
 
