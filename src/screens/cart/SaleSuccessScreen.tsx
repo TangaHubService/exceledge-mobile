@@ -7,8 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as Print from 'expo-print';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
-import { getSaleById, getInvoice } from '../../api/sales';
-import { API_URL } from '../../api/client';
+import { getSaleById, getInvoicePdfFile } from '../../api/sales';
 import { usePrinterStore } from '../../store/printerStore';
 import { useIsOffline } from '../../components/OfflineBanner';
 import { colors } from '../../theme';
@@ -72,11 +71,11 @@ export default function SaleSuccessScreen() {
     let cancelled = false;
     (async () => {
       try {
-        const invoiceDocument = await getInvoice(saleId);
-        if (cancelled || !invoiceDocument?.renderedHtml) return;
-        const html = `<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>@page{size:A4 portrait;margin:6mm}html,body{margin:0;padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.rra-invoice .sheet{box-shadow:none!important;border-radius:0!important}</style></head><body>${invoiceDocument.renderedHtml}</body></html>`;
+        const invoice = saleQuery.data?.invoiceNumber ?? invoiceNumber ?? saleQuery.data?.saleNumber ?? String(saleId);
+        const pdf = await getInvoicePdfFile(saleId, invoice);
+        if (cancelled) return;
         for (let i = 0; i < copies; i += 1) {
-          await Print.printAsync({ html });
+          await Print.printAsync({ uri: pdf.uri });
         }
       } catch (error: any) {
         toast.warning('Auto-print failed', error?.message ?? 'The receipt could not be printed.');
@@ -86,7 +85,7 @@ export default function SaleSuccessScreen() {
     return () => {
       cancelled = true;
     };
-  }, [autoPrint, copies, isOffline, saleId, saleQuery.data]);
+  }, [autoPrint, copies, invoiceNumber, isOffline, saleId, saleQuery.data]);
 
   const sale = saleQuery.data;
   const payment = sale?.salePayments?.[0];

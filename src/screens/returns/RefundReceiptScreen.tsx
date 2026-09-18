@@ -1,16 +1,14 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { File, Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
-import { getSaleById } from '../../api/sales';
-import { useAuthStore } from '../../store/authStore';
+import { getInvoicePdfFile, getSaleById } from '../../api/sales';
 import { ReferenceBottomBar, ReferenceHeader, type ReferenceTab } from '../../components/ReferenceChrome';
 import { colors } from '../../theme';
 import { toast } from '../../utils/toast';
@@ -21,9 +19,6 @@ type Route = RouteProp<RootStackParamList, 'RefundReceipt'>;
 function money(value: number) {
   return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Math.abs(Number(value || 0)))} RWF`;
 }
-function safe(value: unknown) {
-  return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-}
 function ReceiptRow({ label, value, green }: { label: string; value: string; green?: boolean }) {
   return <View className="min-h-[66px] flex-row items-center justify-between border-t border-gray-200"><Text className="text-[16px] font-semibold text-[#606777]">{label}</Text><Text numberOfLines={2} className={`ml-6 flex-1 text-right text-[16px] font-bold ${green ? 'text-green-600' : 'text-gray-950'}`}>{value}</Text></View>;
 }
@@ -32,7 +27,6 @@ export default function RefundReceiptScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { saleId, invoiceNumber, totalAmount, action } = route.params;
-  const organization = useAuthStore((s) => s.organizations.find((item) => item.id === s.activeOrganizationId));
   const saleQuery = useQuery({ queryKey: ['sale', saleId], queryFn: () => getSaleById(saleId) });
   const actionHandled = useRef(false);
   const sale = saleQuery.data;
@@ -43,27 +37,18 @@ export default function RefundReceiptScreen() {
   const date = sale?.createdAt ? new Date(sale.createdAt).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
   const customer = sale?.customer?.name ?? 'Walk-in Customer';
 
-  const html = useMemo(() => `<!doctype html><html><body style="font-family:-apple-system,Arial;padding:34px;color:#111827">
-    <h1 style="color:#00673e">${safe(organization?.name ?? 'Excel Edge POS')}</h1>
-    <h2>REFUND RECEIPT</h2><h2 style="color:#078943">${safe(receiptNumber)}</h2>
-    <p><strong>Original invoice:</strong> ${safe(originalInvoice)}</p><hr />
-    <p><strong>Date:</strong> ${safe(date)}</p><p><strong>Customer:</strong> ${safe(customer)}</p>
-    <p><strong>Refund amount:</strong> ${safe(money(amount))}</p><p><strong>Method:</strong> ${safe(method)}</p><hr />
-    <p>Thank you. Your refund has been processed successfully.</p>
-  </body></html>`, [amount, customer, date, method, organization?.name, originalInvoice, receiptNumber]);
-
   const print = async () => {
-    try { await Print.printAsync({ html }); }
+    try {
+      const pdf = await getInvoicePdfFile(saleId, receiptNumber);
+      await Print.printAsync({ uri: pdf.uri });
+    }
     catch (error: any) { toast.error('Print failed', error?.message ?? 'Could not open the print dialog.'); }
   };
   const share = async () => {
     try {
-      const { uri } = await Print.printToFileAsync({ html });
-      const source = new File(uri);
-      const namedPdf = new File(Paths.cache, `${String(receiptNumber).replace(/[^a-zA-Z0-9_-]+/g, '-')}.pdf`);
-      await source.copy(namedPdf, { overwrite: true });
+      const pdf = await getInvoicePdfFile(saleId, receiptNumber);
       if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this device.');
-      await Sharing.shareAsync(namedPdf.uri, {
+      await Sharing.shareAsync(pdf.uri, {
         mimeType: 'application/pdf',
         UTI: 'com.adobe.pdf',
         dialogTitle: `Save or share ${receiptNumber}.pdf`,
